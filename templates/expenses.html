@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Мої витрати — СмартБюджет{% endblock %}
+
+{% block content %}
+<div class="section-header fu">
+  <h1>Мої витрати</h1>
+  <p>Додавайте покупки та відстежуйте історію витрат</p>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-4 fu d1">
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-plus-circle me-2 text-primary"></i>Додати покупку</span>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('expenses.add') }}">
+          <div class="mb-3">
+            <label class="form-label">Назва товару *</label>
+            <input type="text" name="name" class="form-control"
+                   placeholder="Наприклад: Гречка 1 кг" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Категорія</label>
+            <select name="category" class="form-select">
+              <option value="">— Оберіть категорію —</option>
+              <option value="Продукти">🛒 Продукти харчування</option>
+              <option value="Гігієна">🧴 Гігієна</option>
+              <option value="Побутова хімія">🧹 Побутова хімія</option>
+              <option value="Електроніка">💻 Електроніка</option>
+              <option value="Одяг та взуття">👕 Одяг та взуття</option>
+              <option value="Транспорт">🚌 Транспорт</option>
+              <option value="Інше">📦 Інше</option>
+            </select>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-7">
+              <label class="form-label">Ціна (₴) *</label>
+              <input type="number" name="price" class="form-control"
+                     placeholder="0.00" step="0.01" min="0" required>
+            </div>
+            <div class="col-5">
+              <label class="form-label">К-сть</label>
+              <input type="number" name="qty" class="form-control"
+                     placeholder="1" min="1" value="1">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Магазин</label>
+            <input type="text" name="store" class="form-control"
+                   list="store-list" placeholder="АТБ, Сільпо…">
+            <datalist id="store-list">
+              <option value="АТБ"><option value="Сільпо"><option value="Фора">
+              <option value="Novus"><option value="Metro"><option value="Rozetka">
+              <option value="Ашан"><option value="Епіцентр">
+            </datalist>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Дата покупки</label>
+            <input type="date" name="date" class="form-control"
+                   value="{{ today }}">
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-check2-circle me-1"></i>Зберегти покупку
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-8 fu d2">
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-list-ul me-2 text-primary"></i>Історія покупок
+          <span class="badge text-bg-light ms-1" style="font-size:.72rem">
+            {{ expenses | length }} записів
+          </span>
+        </span>
+        <form method="GET" class="d-flex gap-2 align-items-center">
+          <select name="category" class="form-select form-select-sm" style="width:auto"
+                  onchange="this.form.submit()">
+            <option value="">Усі категорії</option>
+            {% for c in cats %}
+              <option value="{{ c['category'] }}"
+                {% if selected_cat == c['category'] %}selected{% endif %}>
+                {{ c['category'] }}
+              </option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+
+      <div class="card-body p-0">
+        {% if expenses %}
+        <div class="table-responsive tbl-desktop">
+          <table class="table tbl mb-0">
+            <thead>
+              <tr>
+                <th>Товар</th><th>Категорія</th><th>Магазин</th>
+                <th class="text-end">Ціна</th><th class="text-end">К-сть</th>
+                <th class="text-end">Сума</th><th>Дата</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in expenses %}
+              <tr>
+                <td style="font-weight:700">{{ e['name'] }}</td>
+                <td><span class="badge text-bg-secondary">{{ e['category'] or '—' }}</span></td>
+                <td><i class="bi bi-shop me-1 text-muted"></i>{{ e['store'] or '—' }}</td>
+                <td class="text-end price-norm">{{ '{:,.0f}'.format(e['price']) }} ₴</td>
+                <td class="text-end text-muted" style="font-size:.82rem">{{ e['qty'] }}</td>
+                <td class="text-end price-norm" style="font-weight:700">
+                  {{ '{:,.0f}'.format(e['price'] * e['qty']) }} ₴
+                </td>
+                <td class="text-muted" style="font-size:.82rem">{{ e['date'] }}</td>
+                <td>
+                  <form method="POST" action="{{ url_for('expenses.delete', expense_id=e['id']) }}"
+                        onsubmit="return confirm('Видалити цей запис?')">
+                    <button type="submit" class="btn btn-sm text-danger" title="Видалити">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mob-card p-2">
+          {% for e in expenses %}
+          <div class="mob-expense-card">
+            <div class="d-flex justify-content-between align-items-start gap-2">
+              <div class="name">{{ e['name'] }}</div>
+              <form method="POST" action="{{ url_for('expenses.delete', expense_id=e['id']) }}"
+                    onsubmit="return confirm('Видалити?')">
+                <button type="submit" class="text-danger" style="font-size:.85rem;flex-shrink:0;background:none;border:none;padding:0;cursor:pointer">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </form>
+            </div>
+            <div class="meta">
+              {% if e['category'] %}
+              <span class="badge text-bg-secondary">{{ e['category'] }}</span>
+              {% endif %}
+              {% if e['store'] %}
+              <span><i class="bi bi-shop me-1"></i>{{ e['store'] }}</span>
+              {% endif %}
+              {% if e['qty'] > 1 %}
+              <span>{{ e['qty'] }} шт × {{ '{:,.0f}'.format(e['price']) }} ₴</span>
+              {% endif %}
+            </div>
+            <div class="footer-row">
+              <span class="price">{{ '{:,.0f}'.format(e['price'] * e['qty']) }} ₴</span>
+              <span class="date">{{ e['date'] }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-inbox fs-1 d-block mb-3" style="opacity:.3"></i>
+          <div style="font-weight:600">Записів не знайдено</div>
+          <div style="font-size:.875rem">Додайте першу покупку за допомогою форми зліва</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.querySelector('input[name="date"]').valueAsDate = new Date();
+</script>
+{% endblock %}

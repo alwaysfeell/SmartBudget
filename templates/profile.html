@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Особистий кабінет — СмартБюджет{% endblock %}
+
+{% block content %}
+<div class="section-header fu">
+  <h1>Особистий кабінет</h1>
+  <p>Налаштування профілю та параметри бюджету</p>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-md-4 fu d1">
+    <div class="card text-center">
+      <div class="card-body py-4">
+        <div class="avatar mx-auto mb-3">
+          {{ user['first_name'][0] | upper if user['first_name'] else 'К' }}
+        </div>
+        <div style="font-weight:800;font-size:1.1rem">
+          {{ user['first_name'] }} {{ user['last_name'] }}
+        </div>
+        <div style="color:var(--text-muted);font-size:.85rem;margin-bottom:1rem">
+          {{ user['email'] }}
+        </div>
+        <span class="badge text-bg-primary mb-3">Pro-акаунт</span>
+        <div class="d-flex flex-column gap-2 mt-1">
+          <div style="font-size:.82rem;background:var(--surface);border-radius:10px;padding:.6rem 1rem;text-align:left">
+            <i class="bi bi-geo-alt me-2 text-muted"></i>Місто: <strong>{{ user['city'] }}</strong>
+          </div>
+          <div style="font-size:.82rem;background:var(--surface);border-radius:10px;padding:.6rem 1rem;text-align:left">
+            <i class="bi bi-calendar3 me-2 text-muted"></i>Реєстрація: <strong>{{ user['registered'] }}</strong>
+          </div>
+          <div style="font-size:.82rem;background:var(--surface);border-radius:10px;padding:.6rem 1rem;text-align:left">
+            <i class="bi bi-cart3 me-2 text-muted"></i>Покупок: <strong>{{ stats.total_purchases }}</strong>
+          </div>
+          <div style="font-size:.82rem;background:var(--surface);border-radius:10px;padding:.6rem 1rem;text-align:left">
+            <i class="bi bi-piggy-bank me-2 text-muted"></i>
+            Потенційна економія: <strong style="color:var(--green)">{{ '{:,.0f}'.format(stats.savings) }} ₴</strong>
+          </div>
+          <div style="font-size:.82rem;background:var(--surface);border-radius:10px;padding:.6rem 1rem;text-align:left">
+            <i class="bi bi-wallet me-2 text-muted"></i>
+            Бюджет: <strong>{{ '{:,.0f}'.format(user['budget']) }} {{ user['currency'] }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-8 fu d2">
+    <div class="card mb-4">
+      <div class="card-header">
+        <span><i class="bi bi-person-gear me-2 text-primary"></i>Редагувати профіль</span>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('profile.update') }}">
+          <div class="row g-3">
+            <div class="col-12 col-sm-6">
+              <label class="form-label">Ім'я</label>
+              <input type="text" name="first_name" class="form-control"
+                     value="{{ user['first_name'] }}">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label">Прізвище</label>
+              <input type="text" name="last_name" class="form-control"
+                     value="{{ user['last_name'] }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control"
+                     value="{{ user['email'] }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Місто</label>
+              <select name="city" class="form-select">
+                {% for city in ['Київ','Харків','Одеса','Дніпро','Запоріжжя','Львів','Миколаїв','Вінниця','Полтава','Черкаси'] %}
+                <option value="{{ city }}" {% if user['city'] == city %}selected{% endif %}>{{ city }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12"><hr class="my-2"/></div>
+            <div class="col-12">
+              <label class="form-label" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Параметри бюджету</label>
+            </div>            <div class="col-12 col-sm-6">
+              <label class="form-label">Місячний бюджет</label>
+              <div class="input-group">
+                <input type="number" name="budget" class="form-control"
+                       value="{{ user['budget'] | int }}" min="0" step="100">
+                <span class="input-group-text">₴</span>
+              </div>
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label">Валюта</label>
+              <select name="currency" class="form-select">
+                <option value="₴" {% if user['currency'] == '₴' %}selected{% endif %}>₴ Гривня</option>
+                <option value="$" {% if user['currency'] == '$' %}selected{% endif %}>$ Долар</option>
+                <option value="€" {% if user['currency'] == '€' %}selected{% endif %}>€ Євро</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-floppy me-1"></i>Зберегти зміни
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-6 col-sm-3">
+        <div class="stat-card stat-blue text-center p-3">
+          <div class="stat-icon mx-auto mb-2" style="width:36px;height:36px;font-size:.9rem">
+            <i class="bi bi-wallet2"></i>
+          </div>
+          <div style="font-size:1.1rem;font-weight:800;font-family:'JetBrains Mono',monospace">
+            {{ '{:,.0f}'.format(stats.budget) }}
+          </div>
+          <div style="font-size:.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase">Бюджет ₴</div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="stat-card stat-amber text-center p-3">
+          <div class="stat-icon mx-auto mb-2" style="width:36px;height:36px;font-size:.9rem">
+            <i class="bi bi-bag-check"></i>
+          </div>
+          <div style="font-size:1.1rem;font-weight:800;font-family:'JetBrains Mono',monospace">
+            {{ '{:,.0f}'.format(stats.spent) }}
+          </div>
+          <div style="font-size:.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase">Витрачено ₴</div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="stat-card stat-green text-center p-3">
+          <div class="stat-icon mx-auto mb-2" style="width:36px;height:36px;font-size:.9rem">
+            <i class="bi bi-piggy-bank"></i>
+          </div>
+          <div style="font-size:1.1rem;font-weight:800;font-family:'JetBrains Mono',monospace">
+            {{ '{:,.0f}'.format(stats.savings) }}
+          </div>
+          <div style="font-size:.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase">Економія ₴</div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="stat-card stat-red text-center p-3">
+          <div class="stat-icon mx-auto mb-2" style="width:36px;height:36px;font-size:.9rem">
+            <i class="bi bi-receipt"></i>
+          </div>
+          <div style="font-size:1.1rem;font-weight:800;font-family:'JetBrains Mono',monospace">
+            {{ stats.total_purchases }}
+          </div>
+          <div style="font-size:.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase">Покупок</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

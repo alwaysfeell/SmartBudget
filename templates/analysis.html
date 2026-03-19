@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Аналіз цін — СмартБюджет{% endblock %}
+
+{% block content %}
+<div class="section-header fu">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div>
+      <h1>Аналіз цін</h1>
+      <p>Порівняння по магазинах — найвигідніші пропозиції підсвічені</p>
+    </div>
+    <button class="btn btn-success" onclick="fetchAdvice()">
+      <i class="bi bi-stars me-1"></i>Згенерувати пораду
+    </button>
+  </div>
+</div>
+
+<div id="adviceBlock" class="advice-card mb-4 fu" style="display:none">
+  <div class="advice-title"><i class="bi bi-lightbulb-fill me-1" style="color:var(--accent)"></i>Рекомендація системи</div>
+  <p id="adviceText" style="font-size:.875rem;color:var(--text-secondary);margin:0"></p>
+</div>
+
+<div class="card mb-4 fu d1">
+  <div class="card-body py-3">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-12 col-sm-4 col-md-3">
+        <label class="form-label mb-1">Категорія</label>
+        <select name="category" class="form-select form-select-sm">
+          <option value="">Усі категорії</option>
+          {% for c in categories %}
+            <option value="{{ c['category'] }}" {% if sel_category == c['category'] %}selected{% endif %}>
+              {{ c['category'] }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-sm-4 col-md-3">
+        <label class="form-label mb-1">Магазин</label>
+        <select name="store" class="form-select form-select-sm">
+          <option value="">Усі магазини</option>
+          {% for s in stores %}
+            <option value="{{ s['store'] }}" {% if sel_store == s['store'] %}selected{% endif %}>
+              {{ s['store'] }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-sm-4 col-md-2">
+        <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+          <i class="bi bi-funnel me-1"></i>Застосувати
+        </button>
+      </div>
+      {% if sel_store or sel_category %}
+      <div class="col-auto">
+        <a href="{{ url_for('analysis.index') }}" class="btn btn-sm text-muted">
+          <i class="bi bi-x-circle me-1"></i>Скинути
+        </a>
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+{% if comparison %}
+<div class="card fu d2 mb-4">
+  <div class="card-header">
+    <span><i class="bi bi-table me-2 text-primary"></i>Порівняння цін по товарах</span>
+    <span class="badge-best"><i class="bi bi-check-circle me-1"></i>Найкращі виділені</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive tbl-desktop">
+      <table class="table tbl mb-0">
+        <thead>
+          <tr>
+            <th>Товар</th><th>Категорія</th><th>Мін. ціна</th>
+            <th>Макс. ціна</th><th>Кращий магазин</th>
+            <th>Економія</th><th>Ціни по магазинах</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in comparison %}
+          <tr>
+            <td style="font-weight:700">{{ item.name }}</td>
+            <td><span class="badge text-bg-secondary">{{ item.category }}</span></td>
+            <td><span class="price-best">{{ '{:,.0f}'.format(item.min_price) }} ₴</span></td>
+            <td class="price-norm">{{ '{:,.0f}'.format(item.max_price) }} ₴</td>
+            <td>
+              <div style="font-size:.82rem;font-weight:700;color:var(--green)">
+                <i class="bi bi-shop me-1"></i>{{ item.best_store }}
+              </div>
+            </td>
+            <td>
+              {% if item.savings > 0 %}
+                <span class="badge-best">−{{ '{:,.0f}'.format(item.savings) }} ₴</span>
+              {% else %}
+                <span class="text-muted" style="font-size:.82rem">однакова</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="d-flex flex-wrap gap-1">
+                {% for store, price in item.store_prices.items() %}
+                  <span class="badge {% if price == item.min_price %}text-bg-success{% else %}text-bg-light{% endif %}"
+                        style="font-family:'JetBrains Mono',monospace;font-size:.72rem">
+                    {{ store }}: {{ '{:,.0f}'.format(price) }} ₴
+                  </span>
+                {% endfor %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mob-card p-2">
+      {% for item in comparison %}
+      <div class="mob-price-card">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="item-name mb-0">{{ item.name }}</div>
+          {% if item.savings > 0 %}
+            <span class="badge-best" style="flex-shrink:0">−{{ '{:,.0f}'.format(item.savings) }} ₴</span>
+          {% endif %}
+        </div>
+        <div class="mb-2">
+          <span class="badge text-bg-secondary" style="font-size:.7rem">{{ item.category }}</span>
+        </div>
+        {% for store, price in item.store_prices.items()|sort(attribute='1') %}
+        <div class="store-row">
+          <span class="store-name">
+            {% if price == item.min_price %}
+              <i class="bi bi-check-circle-fill text-success me-1" style="font-size:.75rem"></i>
+            {% endif %}
+            {{ store }}
+          </span>
+          <span class="store-price {% if price == item.min_price %}price-best{% else %}text-muted{% endif %}">
+            {{ '{:,.0f}'.format(price) }} ₴
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if filtered %}
+<div class="card fu d3">
+  <div class="card-header">
+    <span><i class="bi bi-list-check me-2 text-primary"></i>
+      Витрати за фільтром
+      {% if sel_category %}<span class="badge text-bg-light ms-1">{{ sel_category }}</span>{% endif %}
+      {% if sel_store %}<span class="badge text-bg-light ms-1">{{ sel_store }}</span>{% endif %}
+    </span>
+    <span class="text-muted" style="font-size:.78rem">{{ filtered | length }} записів</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table tbl mb-0">
+        <thead><tr><th>Товар</th><th>Категорія</th><th>Магазин</th><th class="text-end">Ціна</th><th>Дата</th></tr></thead>
+        <tbody>
+          {% for e in filtered %}
+          <tr>
+            <td style="font-weight:700">{{ e['name'] }}</td>
+            <td><span class="badge text-bg-secondary">{{ e['category'] }}</span></td>
+            <td><i class="bi bi-shop me-1 text-muted"></i>{{ e['store'] }}</td>
+            <td class="text-end price-norm">{{ '{:,.0f}'.format(e['price']) }} ₴</td>
+            <td class="text-muted" style="font-size:.82rem">{{ e['date'] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if not comparison and not filtered %}
+<div class="card fu d2">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-graph-up fs-1 d-block mb-3" style="opacity:.3"></i>
+    <div style="font-weight:600">Ще немає даних для аналізу</div>
+    <div style="font-size:.875rem">Додайте покупки з вказанням магазину, щоб побачити порівняння цін</div>
+    <a href="{{ url_for('expenses.index') }}" class="btn btn-primary btn-sm mt-3">
+      <i class="bi bi-plus-lg me-1"></i>Додати витрати
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function fetchAdvice() {
+  fetch('/analysis/advice')
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('adviceText').textContent = d.advice;
+      const block = document.getElementById('adviceBlock');
+      block.style.display = 'block';
+      block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+}
+</script>
+{% endblock %}

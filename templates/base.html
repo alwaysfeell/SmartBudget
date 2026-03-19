@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>{% block title %}СмартБюджет{% endblock %}</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+<style>
+:root{
+  --accent:#2563eb;--accent-light:#dbeafe;--accent-dark:#1d4ed8;
+  --green:#16a34a;--green-light:#dcfce7;
+  --amber:#d97706;--amber-light:#fef3c7;
+  --red:#dc2626;--red-light:#fee2e2;
+  --surface:#f1f5f9;--card:#fff;--border:#e2e8f0;
+  --text-primary:#0f172a;--text-secondary:#64748b;--text-muted:#94a3b8;
+  --radius:14px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 20px rgba(0,0,0,.09);
+  --nav-h:64px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Manrope',sans-serif;background:var(--surface);color:var(--text-primary);min-height:100vh}
+
+.navbar{height:var(--nav-h);background:var(--card);border-bottom:1px solid var(--border);
+        box-shadow:var(--shadow-sm);padding:0 1.25rem}
+.navbar-brand{font-weight:800;font-size:1.15rem;color:var(--accent)!important;
+              letter-spacing:-.5px;display:flex;align-items:center;gap:.5rem}
+.brand-icon{width:34px;height:34px;background:var(--accent);border-radius:10px;
+            display:flex;align-items:center;justify-content:center;
+            color:#fff;font-size:.95rem;flex-shrink:0}
+.nav-link{font-weight:600;font-size:.85rem;color:var(--text-secondary)!important;
+          padding:.45rem .8rem!important;border-radius:8px;
+          transition:color .15s,background .15s;display:flex;align-items:center;gap:.3rem}
+.nav-link:hover,.nav-link.active{color:var(--accent)!important;background:var(--accent-light)}
+.navbar-toggler{border:none;padding:.25rem}
+.navbar-toggler:focus{box-shadow:none}
+
+.page-content{padding-top:calc(var(--nav-h) + 2rem);padding-bottom:3.5rem;min-height:100vh}
+
+.section-header{margin-bottom:1.75rem}
+.section-header h1{font-weight:800;font-size:clamp(1.4rem,3vw,1.9rem);
+                   letter-spacing:-.5px;margin-bottom:.2rem}
+.section-header p{color:var(--text-secondary);margin:0;font-size:.9rem}
+
+.card{border:1px solid var(--border);border-radius:var(--radius);
+      box-shadow:var(--shadow-sm);background:var(--card)}
+.card-header{background:transparent;border-bottom:1px solid var(--border);
+             padding:.9rem 1.2rem;font-weight:700;font-size:.875rem;
+             display:flex;align-items:center;justify-content:space-between}
+.card-body{padding:1.2rem}
+
+.stat-card{border-radius:var(--radius);padding:1.35rem 1.4rem;background:var(--card);
+           border:1px solid var(--border);box-shadow:var(--shadow-sm);
+           transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden;height:100%}
+.stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.stat-icon{width:42px;height:42px;border-radius:11px;display:flex;
+           align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:.9rem}
+.stat-value{font-size:1.65rem;font-weight:800;letter-spacing:-1px;line-height:1;
+            margin-bottom:.35rem;font-family:'JetBrains Mono',monospace}
+.stat-label{font-size:.75rem;color:var(--text-secondary);font-weight:700;
+            text-transform:uppercase;letter-spacing:.5px}
+.stat-delta{font-size:.78rem;font-weight:600;margin-top:.5rem}
+.stat-bg{position:absolute;right:-8px;top:-8px;font-size:5rem;opacity:.05;pointer-events:none}
+.stat-blue  .stat-icon{background:var(--accent-light);color:var(--accent)}
+.stat-green .stat-icon{background:var(--green-light); color:var(--green)}
+.stat-amber .stat-icon{background:var(--amber-light); color:var(--amber)}
+.stat-red   .stat-icon{background:var(--red-light);   color:var(--red)}
+
+.btn{font-weight:700;border-radius:9px;font-size:.875rem;transition:all .15s}
+.btn-primary{background:var(--accent);border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent-dark);border-color:var(--accent-dark)}
+.btn-success{background:var(--green);border-color:var(--green)}
+.btn-success:hover{background:#15803d;border-color:#15803d}
+.btn-outline-primary{color:var(--accent);border-color:var(--accent)}
+.btn-outline-primary:hover{background:var(--accent);color:#fff}
+.btn-sm{padding:.35rem .75rem;font-size:.8rem}
+
+.form-label{font-weight:600;font-size:.875rem;margin-bottom:.3rem}
+.form-control,.form-select{border:1px solid var(--border);border-radius:10px;
+                            font-size:.9rem;padding:.52rem .9rem;
+                            font-family:'Manrope',sans-serif}
+.form-control:focus,.form-select:focus{border-color:var(--accent);
+                                        box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+
+.tbl thead th{background:var(--surface);font-size:.75rem;font-weight:700;
+              text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);
+              border-bottom:1px solid var(--border);padding:.8rem 1rem;white-space:nowrap}
+.tbl tbody td{padding:.8rem 1rem;vertical-align:middle;font-size:.875rem;
+              border-bottom:1px solid var(--border)}
+.tbl tbody tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover{background:#f8faff}
+.price-best{color:var(--green);font-weight:800;font-family:'JetBrains Mono',monospace}
+.price-norm{font-family:'JetBrains Mono',monospace;color:var(--text-secondary)}
+.badge-best{background:var(--green-light);color:var(--green);font-weight:700;
+            font-size:.7rem;padding:.2rem .5rem;border-radius:5px}
+
+.advice-card{background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%);
+             border:1px solid #bfdbfe;border-radius:var(--radius);padding:1.3rem 1.4rem}
+.advice-title{font-weight:800;font-size:.95rem;color:var(--accent-dark);margin-bottom:.6rem}
+
+.rec-card{border-radius:var(--radius);background:var(--card);border:1px solid var(--border);
+          padding:1.2rem 1.3rem;transition:box-shadow .2s,transform .2s}
+.rec-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.rec-tag{font-size:.72rem;font-weight:700;padding:.2rem .55rem;border-radius:6px}
+
+.prog-track{height:10px;background:var(--surface);border-radius:8px;overflow:hidden}
+.prog-fill{height:100%;border-radius:8px;background:var(--accent);transition:width .6s ease}
+
+.avatar{width:72px;height:72px;border-radius:50%;background:var(--accent-light);
+        display:flex;align-items:center;justify-content:center;
+        font-size:1.75rem;font-weight:800;color:var(--accent);flex-shrink:0}
+
+.flash-container{position:fixed;top:calc(var(--nav-h) + .75rem);right:1rem;
+                 z-index:2000;display:flex;flex-direction:column;gap:.5rem;min-width:280px}
+.flash-item{padding:.75rem 1rem;border-radius:10px;font-weight:600;font-size:.875rem;
+            box-shadow:var(--shadow-md);animation:slideIn .25s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.fu{animation:fadeUp .38s ease both}
+.d1{animation-delay:.07s}.d2{animation-delay:.14s}
+.d3{animation-delay:.21s}.d4{animation-delay:.28s}
+
+footer{background:var(--card);border-top:1px solid var(--border);
+       padding:1.1rem 0;font-size:.78rem;color:var(--text-muted);text-align:center}
+
+.mob-card{display:none}
+
+@media(max-width:767px){
+  .page-content{padding-top:calc(var(--nav-h) + .75rem);padding-bottom:5rem}
+
+  .navbar-brand span.d-none{display:none!important}
+  .navbar-collapse{background:var(--card);border-top:1px solid var(--border);
+                   margin:0 -1.25rem;padding:.5rem 1rem 1rem}
+  .navbar-nav{gap:.15rem!important}
+  .nav-link{padding:.6rem .9rem!important;font-size:.9rem!important}
+
+  .stat-card{padding:1rem 1.1rem}
+  .stat-value{font-size:1.3rem}
+  .stat-icon{width:36px;height:36px;font-size:.95rem;margin-bottom:.6rem}
+
+  .section-header{margin-bottom:1.25rem}
+  .section-header h1{font-size:1.35rem}
+  .section-header .d-flex{flex-direction:column;gap:.75rem!important}
+  .section-header .btn{width:100%}
+
+  .card-header{flex-wrap:wrap;gap:.5rem;padding:.75rem 1rem}
+
+  .tbl-desktop{display:none!important}
+  .mob-card{display:block}
+
+  .mob-expense-card{background:var(--card);border:1px solid var(--border);
+                    border-radius:12px;padding:.9rem 1rem;margin-bottom:.5rem}
+  .mob-expense-card .name{font-weight:700;font-size:.95rem;margin-bottom:.35rem}
+  .mob-expense-card .meta{display:flex;flex-wrap:wrap;gap:.4rem;
+                           font-size:.78rem;color:var(--text-secondary);margin-bottom:.5rem}
+  .mob-expense-card .footer-row{display:flex;justify-content:space-between;align-items:center}
+  .mob-expense-card .price{font-family:'JetBrains Mono',monospace;
+                            font-weight:800;font-size:1rem;color:var(--text-primary)}
+  .mob-expense-card .date{font-size:.75rem;color:var(--text-muted)}
+
+  .mob-price-card{background:var(--card);border:1px solid var(--border);
+                  border-radius:12px;padding:.9rem 1rem;margin-bottom:.5rem}
+  .mob-price-card .item-name{font-weight:700;font-size:.9rem;margin-bottom:.6rem}
+  .mob-price-card .store-row{display:flex;justify-content:space-between;
+                              align-items:center;padding:.35rem 0;
+                              border-bottom:1px solid var(--border);font-size:.84rem}
+  .mob-price-card .store-row:last-child{border-bottom:none}
+  .mob-price-card .store-name{color:var(--text-secondary);font-weight:600}
+  .mob-price-card .store-price{font-family:'JetBrains Mono',monospace;font-weight:700}
+
+  .rec-card{padding:1rem}
+
+  .avatar{width:58px;height:58px;font-size:1.4rem}
+
+  .flash-container{left:.75rem;right:.75rem;top:auto;bottom:1rem;min-width:unset}
+
+  .form-control,.form-select{font-size:16px!important}
+
+  .card-header form{width:100%}
+  .card-header form .form-select{width:100%!important}
+
+  .bottom-nav{display:flex!important}
+}
+
+@media(min-width:768px){
+  .bottom-nav{display:none!important}
+  .mob-card{display:none!important}
+}
+
+.bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;z-index:1030;
+  background:var(--card);border-top:1px solid var(--border);
+  padding:.4rem 0 calc(.4rem + env(safe-area-inset-bottom));
+  box-shadow:0 -2px 12px rgba(0,0,0,.08);
+}
+.bottom-nav a{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:.2rem;
+  color:var(--text-muted);text-decoration:none;font-size:.62rem;font-weight:700;
+  padding:.35rem .25rem;border-radius:8px;transition:color .15s;
+  text-transform:uppercase;letter-spacing:.3px;
+}
+.bottom-nav a i{font-size:1.2rem;line-height:1}
+.bottom-nav a.active,
+.bottom-nav a:hover{color:var(--accent)}
+.bottom-nav a.active i{
+  background:var(--accent-light);border-radius:8px;
+  padding:.2rem .55rem;color:var(--accent)
+}
+@media(max-width:767px){
+  .page-content{padding-bottom:calc(5rem + env(safe-area-inset-bottom))}
+}
+
+@media(max-width:400px){
+  .stat-value{font-size:1.1rem}
+  .bottom-nav a{font-size:.55rem}
+}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg fixed-top">
+  <div class="container-xl">
+    <a class="navbar-brand" href="{{ url_for('main.index') }}">
+      <span class="brand-icon"><i class="bi bi-lightning-charge-fill"></i></span>
+      СмартБюджет
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+      <i class="bi bi-list fs-4" style="color:var(--text-primary)"></i>
+    </button>
+    <div class="collapse navbar-collapse" id="mainNav">
+      <ul class="navbar-nav ms-auto gap-1 py-2 py-lg-0">
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}"
+             href="{{ url_for('main.index') }}"><i class="bi bi-grid-1x2"></i>Головна</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'expenses' %}active{% endif %}"
+             href="{{ url_for('expenses.index') }}"><i class="bi bi-cart3"></i>Мої витрати</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'price_analysis' %}active{% endif %}"
+             href="{{ url_for('analysis.index') }}"><i class="bi bi-graph-up-arrow"></i>Аналіз цін</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'recommendations' %}active{% endif %}"
+             href="{{ url_for('recommendations.index') }}"><i class="bi bi-stars"></i>Рекомендації</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'goals' %}active{% endif %}"
+             href="{{ url_for('goals.index') }}"><i class="bi bi-bullseye"></i>Цілі</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'dss' %}active{% endif %}"
+             href="{{ url_for('dss.index') }}"><i class="bi bi-cpu"></i>DSS</a>
+        </li>
+        <li class="nav-item ms-lg-1">
+          <a class="nav-link {% if request.endpoint == 'profile' %}active{% endif %}"
+             href="{{ url_for('profile.index') }}"><i class="bi bi-person-circle"></i>Кабінет</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="flash-container" id="flashContainer">
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+    <div class="flash-item alert alert-{{ 'success' if cat == 'success' else 'danger' if cat == 'danger' else 'info' }} alert-dismissible mb-0">
+      {{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+{% endwith %}
+</div>
+
+<nav class="bottom-nav">
+  <a href="{{ url_for('main.index') }}"
+     class="{% if request.endpoint == 'index' %}active{% endif %}">
+    <i class="bi bi-grid-1x2"></i>Головна
+  </a>
+  <a href="{{ url_for('expenses.index') }}"
+     class="{% if request.endpoint == 'expenses' %}active{% endif %}">
+    <i class="bi bi-cart3"></i>Витрати
+  </a>
+  <a href="{{ url_for('analysis.index') }}"
+     class="{% if request.endpoint == 'price_analysis' %}active{% endif %}">
+    <i class="bi bi-graph-up-arrow"></i>Ціни
+  </a>
+  <a href="{{ url_for('recommendations.index') }}"
+     class="{% if request.endpoint == 'recommendations' %}active{% endif %}">
+    <i class="bi bi-stars"></i>Поради
+  </a>
+  <a href="{{ url_for('goals.index') }}"
+     class="{% if request.endpoint == 'goals' %}active{% endif %}">
+    <i class="bi bi-bullseye"></i>Цілі
+  </a>
+  <a href="{{ url_for('dss.index') }}"
+     class="{% if request.endpoint == 'dss' %}active{% endif %}">
+    <i class="bi bi-cpu"></i>DSS
+  </a>
+  <a href="{{ url_for('profile.index') }}"
+     class="{% if request.endpoint == 'profile' %}active{% endif %}">
+    <i class="bi bi-person-circle"></i>Кабінет
+  </a>
+</nav>
+
+<main class="page-content">
+  <div class="container-xl">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+<footer>
+  <div class="container-xl d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+    <span>© 2026 <strong>СмартБюджет</strong> — дипломний проект</span>
+    <span>Інформаційна система підтримки прийняття рішень щодо споживчих витрат</span>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+setTimeout(()=>{
+  document.querySelectorAll('.flash-item').forEach(el=>{
+    el.style.transition='opacity .4s';el.style.opacity='0';
+    setTimeout(()=>el.remove(),400);
+  });
+},3500);
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

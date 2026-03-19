@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+{% block title %}DSS Аналітика — СмартБюджет{% endblock %}
+
+{% block content %}
+<div class="section-header fu">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div>
+      <h1><i class="bi bi-cpu me-2 text-primary"></i>DSS Аналітика</h1>
+      <p>Прогнозування · Сценарний аналіз · 50/30/20 · Якість даних</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <span class="badge text-bg-primary px-3 py-2" style="font-size:.78rem">
+        <i class="bi bi-database me-1"></i>{{ quality.total_records }} записів
+      </span>
+      <span class="badge px-3 py-2"
+            style="font-size:.78rem;
+              background:{% if quality.quality_color == 'green' %}var(--green-light);color:var(--green)
+              {% elif quality.quality_color == 'blue' %}var(--accent-light);color:var(--accent)
+              {% elif quality.quality_color == 'amber' %}var(--amber-light);color:var(--amber)
+              {% else %}var(--red-light);color:var(--red){% endif %}">
+        <i class="{{ quality.quality_icon }} me-1"></i>Якість: {{ quality.overall }}%
+      </span>
+    </div>
+  </div>
+</div>
+
+{# ══════════════════════════════════════════════
+   БЛОК 1 — ПРОГНОЗУВАННЯ
+══════════════════════════════════════════════ #}
+<div class="row g-3 mb-4">
+  <div class="col-12 fu d1">
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-graph-up me-2 text-primary"></i>Прогноз витрат на 3 місяці</span>
+        <span class="badge px-2 py-1"
+              style="font-size:.72rem;
+                background:{% if forecast.trend_direction == 'up' %}var(--red-light);color:var(--red)
+                {% elif forecast.trend_direction == 'down' %}var(--green-light);color:var(--green)
+                {% else %}var(--accent-light);color:var(--accent){% endif %}">
+          {% if forecast.trend_direction == 'up' %}↑ Тренд зростання
+          {% elif forecast.trend_direction == 'down' %}↓ Тренд зниження
+          {% else %}→ Стабільний тренд{% endif %}
+        </span>
+      </div>
+      <div class="card-body">
+        <canvas id="forecastChart" style="max-height:260px"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  {% for i in range(3) %}
+  <div class="col-12 col-md-4 fu d{{ i+1 }}">
+    <div class="stat-card {% if i == 0 %}stat-blue{% elif i == 1 %}stat-amber{% else %}stat-green{% endif %}">
+      <div class="stat-icon"><i class="bi bi-calendar{% if i == 0 %}{% elif i == 1 %}2{% else %}3{% endif %}-event"></i></div>
+      <div class="stat-value">{{ '{:,.0f}'.format(forecast.forecast_values[i]) }} ₴</div>
+      <div class="stat-label">{{ forecast.forecast_labels[i] }}</div>
+      <div class="stat-delta text-secondary" style="font-size:.75rem">
+        Діапазон: {{ '{:,.0f}'.format(forecast.forecast_low[i]) }}–{{ '{:,.0f}'.format(forecast.forecast_high[i]) }} ₴
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-5 fu d2">
+    <div class="card h-100">
+      <div class="card-header"><span><i class="bi bi-shield-exclamation me-2 text-primary"></i>Оцінка ризику</span></div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div style="width:52px;height:52px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.4rem;
+            background:{% if forecast.risk_level == 'high' %}var(--red-light){% elif forecast.risk_level == 'medium' %}var(--amber-light){% else %}var(--green-light){% endif %}">
+            {% if forecast.risk_level == 'high' %}🔴{% elif forecast.risk_level == 'medium' %}🟡{% else %}🟢{% endif %}
+          </div>
+          <div>
+            <div style="font-weight:800;font-size:.95rem">
+              {% if forecast.risk_level == 'high' %}Високий ризик{% elif forecast.risk_level == 'medium' %}Помірний ризик{% else %}Низький ризик{% endif %}
+            </div>
+            <div style="font-size:.8rem;color:var(--text-secondary)">{{ forecast.risk_text }}</div>
+          </div>
+        </div>
+        <div class="mb-1 d-flex justify-content-between" style="font-size:.8rem;font-weight:700">
+          <span>Прогноз / Бюджет</span>
+          <span>{{ forecast.risk_pct }}%</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill" style="width:{{ [forecast.risk_pct, 100]|min }}%;
+            {% if forecast.risk_pct > 100 %}background:var(--red){% elif forecast.risk_pct > 85 %}background:var(--amber){% endif %}"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-7 fu d3">
+    <div class="card h-100">
+      <div class="card-header"><span><i class="bi bi-tags me-2 text-primary"></i>Прогноз по категоріях</span></div>
+      <div class="card-body p-0">
+        {% if forecast.cat_forecast %}
+        <div class="table-responsive tbl-desktop">
+          <table class="table tbl mb-0">
+            <thead><tr><th>Категорія</th><th class="text-end">Ср. на місяць</th><th class="text-end">Наступний місяць</th></tr></thead>
+            <tbody>
+              {% for c in forecast.cat_forecast %}
+              <tr>
+                <td><span class="badge text-bg-secondary">{{ c.category }}</span></td>
+                <td class="text-end price-norm">{{ '{:,.0f}'.format(c.avg_monthly) }} ₴</td>
+                <td class="text-end">
+                  <span class="price-norm" style="font-weight:800">{{ '{:,.0f}'.format(c.next_month) }} ₴</span>
+                  {% if c.next_month > c.avg_monthly %}
+                  <span style="font-size:.72rem;color:var(--red)"> ↑</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="mob-card p-2">
+          {% for c in forecast.cat_forecast %}
+          <div class="mob-expense-card">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="badge text-bg-secondary">{{ c.category }}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:.95rem">
+                {{ '{:,.0f}'.format(c.next_month) }} ₴
+                {% if c.next_month > c.avg_monthly %}<span style="font-size:.72rem;color:var(--red)">↑</span>{% endif %}
+              </span>
+            </div>
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:.3rem">
+              Середнє: {{ '{:,.0f}'.format(c.avg_monthly) }} ₴/міс
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted" style="font-size:.875rem">
+          <i class="bi bi-inbox d-block fs-2 mb-2 opacity-25"></i>Недостатньо даних
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ══════════════════════════════════════════════
+   БЛОК 2 — СЦЕНАРНИЙ АНАЛІЗ
+══════════════════════════════════════════════ #}
+<div class="section-header mt-2 fu">
+  <h1 style="font-size:1.4rem"><i class="bi bi-diagram-3 me-2 text-primary"></i>Сценарний аналіз</h1>
+  <p>Три можливі результати залежно від вашої поведінки</p>
+</div>
+
+<div class="row g-3 mb-4">
+  {% for sc in scenario.scenarios %}
+  <div class="col-12 col-md-4 fu d{{ loop.index }}">
+    <div class="card h-100" style="border-top:3px solid
+      {% if sc.tag == 'success' %}var(--green){% elif sc.tag == 'primary' %}var(--accent){% else %}var(--red){% endif %}">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <span style="font-size:1.4rem"><i class="{{ sc.icon }}
+            {% if sc.tag == 'success' %} text-success{% elif sc.tag == 'primary' %} text-primary{% else %} text-danger{% endif %}"></i></span>
+          <div>
+            <div style="font-weight:800;font-size:.95rem">{{ sc.label }}</div>
+            <div style="font-size:.75rem;color:var(--text-muted)">Сценарій {{ sc.id }}</div>
+          </div>
+        </div>
+        <p style="font-size:.8rem;color:var(--text-secondary);margin-bottom:1rem">{{ sc.desc }}</p>
+        <div class="d-flex flex-column gap-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <span style="font-size:.75rem;color:var(--text-muted);font-weight:700;text-transform:uppercase">Витрати/міс</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:800">{{ '{:,.0f}'.format(sc.spent) }} ₴</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span style="font-size:.75rem;color:var(--text-muted);font-weight:700;text-transform:uppercase">Залишок</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:800;
+              color:{% if sc.remaining >= 0 %}var(--green){% else %}var(--red){% endif %}">
+              {{ '{:+,.0f}'.format(sc.remaining) }} ₴
+            </span>
+          </div>
+          {% if sc.annual_effect != 0 %}
+          <div class="d-flex justify-content-between align-items-center">
+            <span style="font-size:.75rem;color:var(--text-muted);font-weight:700;text-transform:uppercase">Ефект/рік</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:800;
+              color:{% if sc.annual_effect > 0 %}var(--red){% else %}var(--green){% endif %}">
+              {{ '{:+,.0f}'.format(sc.annual_effect) }} ₴
+            </span>
+          </div>
+          {% endif %}
+        </div>
+        <div class="prog-track mt-3">
+          <div class="prog-fill" style="width:{{ [sc.spent / scenario.budget * 100, 100]|min|round }}%;
+            {% if sc.tag == 'success' %}background:var(--green){% elif sc.tag == 'danger' %}background:var(--red){% endif %}">
+          </div>
+        </div>
+        <div style="font-size:.72rem;color:var(--text-muted);margin-top:.3rem">
+          {{ (sc.spent / scenario.budget * 100)|round(1) }}% бюджету
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if scenario.actions %}
+<div class="card mb-4 fu d2">
+  <div class="card-header">
+    <span><i class="bi bi-lightning-charge me-2 text-primary"></i>Дії для досягнення оптимістичного сценарію</span>
+    <span class="badge-best">−{{ '{:,.0f}'.format(scenario.potential_opt) }} ₴/міс</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive tbl-desktop">
+      <table class="table tbl mb-0">
+        <thead><tr><th>#</th><th>Дія</th><th class="text-end">Економія</th></tr></thead>
+        <tbody>
+          {% for a in scenario.actions %}
+          <tr>
+            <td style="color:var(--text-muted);font-weight:700">{{ loop.index }}</td>
+            <td style="font-weight:600">{{ a.action }}</td>
+            <td class="text-end"><span class="badge-best">−{{ '{:,.0f}'.format(a.saving) }} ₴</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="mob-card p-2">
+      {% for a in scenario.actions %}
+      <div class="mob-expense-card">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div style="font-weight:600;font-size:.875rem">{{ a.action }}</div>
+          <span class="badge-best" style="flex-shrink:0">−{{ '{:,.0f}'.format(a.saving) }} ₴</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ══════════════════════════════════════════════
+   БЛОК 3 — ПРАВИЛО 50/30/20
+══════════════════════════════════════════════ #}
+<div class="section-header mt-2 fu">
+  <h1 style="font-size:1.4rem"><i class="bi bi-pie-chart me-2 text-primary"></i>Правило 50/30/20</h1>
+  <p>Розподіл бюджету: 50% потреби · 30% бажання · 20% заощадження</p>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-5 fu d1">
+    <div class="card h-100">
+      <div class="card-header"><span><i class="bi bi-pie-chart-fill me-2 text-primary"></i>Поточний розподіл</span></div>
+      <div class="card-body d-flex flex-column align-items-center justify-content-center gap-3">
+        <canvas id="rule503020Chart" style="max-height:200px;max-width:200px"></canvas>
+        <div class="w-100">
+          {% set buckets = [
+            ('Потреби 50%', rule5020.needs, rule5020.needs_pct, rule5020.needs_status, '#2563eb'),
+            ('Бажання 30%', rule5020.wants, rule5020.wants_pct, rule5020.wants_status, '#d97706'),
+            ('Заощадження 20%', rule5020.saves, rule5020.saves_pct, rule5020.saves_status, '#16a34a'),
+          ] %}
+          {% for label, val, pct, status, color in buckets %}
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-2">
+              <span style="width:10px;height:10px;border-radius:3px;background:{{ color }};display:inline-block;flex-shrink:0"></span>
+              <span style="font-size:.8rem;font-weight:700;color:var(--text-secondary)">{{ label }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:.85rem">{{ pct }}%</span>
+              <span class="badge" style="font-size:.65rem;
+                {% if status == 'ok' %}background:var(--green-light);color:var(--green)
+                {% elif status == 'over' %}background:var(--red-light);color:var(--red)
+                {% else %}background:var(--amber-light);color:var(--amber){% endif %}">
+                {% if status == 'ok' %}✓ норма{% elif status == 'over' %}↑ вище{% else %}↓ нижче{% endif %}
+              </span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-7 fu d2">
+    <div class="card h-100">
+      <div class="card-header"><span><i class="bi bi-bar-chart-steps me-2 text-primary"></i>Факт vs Ціль</span></div>
+      <div class="card-body d-flex flex-column gap-3">
+        {% set rows503020 = [
+          ('🛒 Потреби', rule5020.needs, rule5020.target_needs, rule5020.needs_delta, rule5020.needs_status, '#2563eb'),
+          ('✨ Бажання', rule5020.wants, rule5020.target_wants, rule5020.wants_delta, rule5020.wants_status, '#d97706'),
+          ('🐷 Заощадження', rule5020.saves, rule5020.target_saves, rule5020.saves_delta, rule5020.saves_status, '#16a34a'),
+        ] %}
+        {% for label, fact, target, delta, status, color in rows503020 %}
+        <div>
+          <div class="d-flex justify-content-between mb-1" style="font-size:.82rem">
+            <span style="font-weight:700">{{ label }}</span>
+            <span>
+              <span style="font-family:'JetBrains Mono',monospace;font-weight:800">{{ '{:,.0f}'.format(fact) }} ₴</span>
+              <span style="color:var(--text-muted)"> / {{ '{:,.0f}'.format(target) }} ₴</span>
+              <span style="font-size:.72rem;margin-left:.3rem;
+                color:{% if delta > 200 %}var(--red){% elif delta < -200 %}var(--amber){% else %}var(--green){% endif %}">
+                ({{ '{:+,.0f}'.format(delta) }} ₴)
+              </span>
+            </span>
+          </div>
+          <div class="prog-track">
+            <div class="prog-fill" style="width:{{ [fact / target * 100 if target > 0 else 0, 100]|min|round }}%;background:{{ color }}"></div>
+          </div>
+        </div>
+        {% endfor %}
+
+        {% if rule5020.recommended_save > 0 %}
+        <div class="advice-card mt-1">
+          <div class="advice-title"><i class="bi bi-piggy-bank me-1"></i>Рекомендація</div>
+          <p style="font-size:.84rem;color:var(--text-secondary);margin:0">
+            Відкладайте ще <strong>{{ '{:,.0f}'.format(rule5020.recommended_save) }} ₴/міс</strong>
+            щоб досягти цілі 20% заощаджень
+            (≈ {{ '{:,.0f}'.format(rule5020.recommended_save / 4) }} ₴/тиждень).
+          </p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if rule5020.tips %}
+<div class="row g-3 mb-4">
+  {% for tip in rule5020.tips %}
+  <div class="col-12 col-md-6 fu d{{ loop.index }}">
+    <div class="rec-card">
+      <div class="d-flex align-items-start gap-2 mb-2">
+        <span style="font-size:1.1rem;
+          color:{% if tip.color == 'green' %}var(--green){% elif tip.color == 'amber' %}var(--amber){% elif tip.color == 'red' %}var(--red){% else %}var(--accent){% endif %}">
+          <i class="{{ tip.icon }}"></i>
+        </span>
+        <span style="font-weight:700;font-size:.9rem">
+          {% if tip.type == 'needs' %}Необхідні витрати
+          {% elif tip.type == 'wants' %}Бажані витрати
+          {% elif tip.type == 'saves' %}Заощадження
+          {% else %}Статус{% endif %}
+        </span>
+      </div>
+      <p style="font-size:.845rem;color:var(--text-secondary);margin:0">{{ tip.text }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ══════════════════════════════════════════════
+   БЛОК 4 — ЯКІСТЬ ПОРАД
+══════════════════════════════════════════════ #}
+<div class="section-header mt-2 fu">
+  <h1 style="font-size:1.4rem"><i class="bi bi-patch-check me-2 text-primary"></i>Якість аналізу</h1>
+  <p>Наскільки точні рекомендації системи на основі ваших даних</p>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-4 fu d1">
+    <div class="card h-100 text-center">
+      <div class="card-body d-flex flex-column align-items-center justify-content-center gap-3 py-4">
+        <div style="width:90px;height:90px;border-radius:50%;display:flex;align-items:center;
+                    justify-content:center;font-size:2rem;font-weight:900;
+                    background:{% if quality.quality_color == 'green' %}var(--green-light){% elif quality.quality_color == 'blue' %}var(--accent-light){% elif quality.quality_color == 'amber' %}var(--amber-light){% else %}var(--red-light){% endif %};
+                    color:{% if quality.quality_color == 'green' %}var(--green){% elif quality.quality_color == 'blue' %}var(--accent){% elif quality.quality_color == 'amber' %}var(--amber){% else %}var(--red){% endif %}">
+          {{ quality.overall }}
+        </div>
+        <div>
+          <div style="font-weight:800;font-size:1.1rem">{{ quality.quality_label }}</div>
+          <div style="font-size:.8rem;color:var(--text-muted)">Загальний бал якості</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap justify-content-center" style="font-size:.75rem">
+          <span><i class="bi bi-archive me-1"></i>{{ quality.total_records }} записів</span>
+          <span><i class="bi bi-shop me-1"></i>{{ quality.total_stores }} магазини</span>
+          <span><i class="bi bi-calendar3 me-1"></i>{{ quality.months_depth }} міс.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-8 fu d2">
+    <div class="card h-100">
+      <div class="card-header"><span><i class="bi bi-speedometer me-2 text-primary"></i>Метрики якості</span></div>
+      <div class="card-body d-flex flex-column gap-3">
+        {% set metrics = [
+          ('Охоплення цін', quality.coverage_pct,
+           quality.covered_items|string + ' з ' + quality.total_items|string + ' товарів у ≥2 магазинах'),
+          ('Різноманіття магазинів', quality.diversity_score,
+           quality.total_stores|string + ' унікальних магазинів (ціль ≥5)'),
+          ('Глибина історії', quality.history_score,
+           quality.months_depth|string + ' місяців даних (ціль ≥6)'),
+          ('Реалізація заощаджень', quality.saving_score,
+           quality.optimal_purchases|string + ' з ' + quality.total_comparable|string + ' покупок за мінімальною ціною'),
+          ('Достатність для прогнозу', quality.trend_score,
+           quality.total_records|string + ' записів (ціль ≥50)'),
+        ] %}
+        {% for label, score, hint in metrics %}
+        <div>
+          <div class="d-flex justify-content-between mb-1" style="font-size:.82rem">
+            <span style="font-weight:700">{{ label }}</span>
+            <span style="font-weight:800;color:{% if score >= 70 %}var(--green){% elif score >= 40 %}var(--amber){% else %}var(--red){% endif %}">{{ score }}%</span>
+          </div>
+          <div class="prog-track" style="height:7px">
+            <div class="prog-fill" style="width:{{ score }}%;height:7px;
+              background:{% if score >= 70 %}var(--green){% elif score >= 40 %}var(--amber){% else %}var(--red){% endif %}">
+            </div>
+          </div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.2rem">{{ hint }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  {% if quality.improvements %}
+  <div class="col-12 col-md-6 fu d2">
+    <div class="card h-100">
+      <div class="card-header"><span><i class="bi bi-arrow-up-circle me-2 text-primary"></i>Як покращити якість</span></div>
+      <div class="card-body d-flex flex-column gap-3">
+        {% for imp in quality.improvements %}
+        <div style="background:var(--surface);border-radius:10px;padding:.75rem 1rem">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span style="font-weight:700;font-size:.85rem">{{ imp.metric }}</span>
+            <span style="font-size:.72rem;font-weight:800;
+              color:{% if imp.score >= 70 %}var(--green){% elif imp.score >= 40 %}var(--amber){% else %}var(--red){% endif %}">
+              {{ imp.score }}%
+            </span>
+          </div>
+          <p style="font-size:.8rem;color:var(--text-secondary);margin:0">{{ imp.hint }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if quality.store_stats %}
+  <div class="col-12 col-md-6 fu d3">
+    <div class="card h-100">
+      <div class="card-header"><span><i class="bi bi-shop me-2 text-primary"></i>Активність по магазинах</span></div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table tbl mb-0">
+            <thead><tr><th>Магазин</th><th class="text-end">Записів</th><th class="text-end">Товарів</th><th class="text-end">Витрачено</th></tr></thead>
+            <tbody>
+              {% for s in quality.store_stats %}
+              <tr>
+                <td style="font-weight:700"><i class="bi bi-shop me-1 text-muted"></i>{{ s.store }}</td>
+                <td class="text-end text-muted">{{ s.records }}</td>
+                <td class="text-end text-muted">{{ s.items }}</td>
+                <td class="text-end price-norm">{{ '{:,.0f}'.format(s.total) }} ₴</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+Chart.defaults.font.family = "'Manrope', sans-serif";
+const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+const gridColor = isDark ? '#334155' : '#f1f5f9';
+const textColor = isDark ? '#94a3b8' : '#64748b';
+
+const fData = {{ forecast | tojson }};
+const allLabels = [...fData.history_labels, ...fData.forecast_labels];
+const allHistory = [...fData.history_values, null, null, null];
+const allForecast = [null, null, null, null, null,
+                     ...fData.forecast_values];
+const allLow  = [null,null,null,null,null, ...fData.forecast_low];
+const allHigh = [null,null,null,null,null, ...fData.forecast_high];
+
+new Chart(document.getElementById('forecastChart'), {
+  type: 'line',
+  data: {
+    labels: allLabels,
+    datasets: [
+      {
+        label: 'Фактичні витрати',
+        data: allHistory,
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37,99,235,.08)',
+        tension: .35, fill: true, pointRadius: 5,
+        pointBackgroundColor: '#2563eb', spanGaps: false,
+      },
+      {
+        label: 'Прогноз',
+        data: allForecast,
+        borderColor: '#d97706',
+        borderDash: [6,3],
+        backgroundColor: 'rgba(217,119,6,.06)',
+        tension: .35, fill: true, pointRadius: 5,
+        pointBackgroundColor: '#d97706', spanGaps: false,
+      },
+      {
+        label: 'Мін. прогноз',
+        data: allLow,
+        borderColor: 'rgba(22,163,74,.4)',
+        borderDash: [3,3],
+        tension: .35, fill: false, pointRadius: 0, spanGaps: false,
+      },
+      {
+        label: 'Макс. прогноз',
+        data: allHigh,
+        borderColor: 'rgba(220,38,38,.4)',
+        borderDash: [3,3],
+        tension: .35, fill: false, pointRadius: 0, spanGaps: false,
+      },
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top', labels: { font: {size:12,weight:'600'}, boxRadius:4, color: textColor } },
+      annotation: {}
+    },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { color: textColor } },
+      y: { grid: { color: gridColor }, ticks: { color: textColor, callback: v => v + ' ₴' } }
+    }
+  }
+});
+
+const r = {{ rule5020 | tojson }};
+new Chart(document.getElementById('rule503020Chart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Потреби', 'Бажання', 'Заощадження'],
+    datasets: [
+      {
+        label: 'Факт',
+        data: [r.needs, r.wants, r.saves],
+        backgroundColor: ['rgba(37,99,235,.8)','rgba(217,119,6,.8)','rgba(22,163,74,.8)'],
+        borderWidth: 0, hoverOffset: 6,
+      }
+    ]
+  },
+  options: {
+    cutout: '65%',
+    plugins: { legend: { display: false } }
+  }
+});
+</script>
+{% endblock %}

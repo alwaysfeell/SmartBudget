@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+{% block title %}Фінансові цілі — СмартБюджет{% endblock %}
+
+{% block content %}
+<div class="section-header fu">
+  <h1>Фінансові цілі</h1>
+  <p>Плануйте накопичення та відстежуйте прогрес</p>
+</div>
+
+<div class="row g-4">
+
+  <div class="col-12 col-lg-4">
+
+    <div class="card fu d1 mb-4">
+      <div class="card-header">
+        <span><i class="bi bi-calculator me-2 text-primary"></i>Калькулятор цілі</span>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Сума цілі (₴) *</label>
+          <input type="number" id="c_target" class="form-control" placeholder="50 000" min="1" step="1">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Вже накопичено (₴)</label>
+          <input type="number" id="c_saved" class="form-control" placeholder="0" min="0" step="1" value="0">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Місячний внесок (₴)</label>
+          <input type="number" id="c_monthly" class="form-control" placeholder="2 000" min="0" step="1">
+          <div class="form-text">Або залиште порожнім і вкажіть строк</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Строк (місяців)</label>
+          <input type="number" id="c_months" class="form-control" placeholder="24" min="1" step="1">
+          <div class="form-text">Або залиште порожнім і вкажіть внесок</div>
+        </div>
+        <button class="btn btn-primary w-100" id="calcBtn">
+          <i class="bi bi-calculator me-1"></i>Розрахувати
+        </button>
+
+        <div id="calcResult" style="display:none;margin-top:1.1rem">
+          <div style="background:linear-gradient(135deg,#eff6ff,#f0fdf4);
+            border:1px solid #bfdbfe;border-radius:12px;padding:1.1rem 1.2rem">
+            <div style="font-weight:800;font-size:.82rem;color:#1d4ed8;
+              text-transform:uppercase;letter-spacing:.5px;margin-bottom:.85rem">
+              <i class="bi bi-bar-chart-line me-1"></i>Результат розрахунку
+            </div>
+            <div class="calc-row"><span>Залишилось накопити</span>
+              <strong id="r_remaining" style="font-family:'JetBrains Mono',monospace;color:#0f172a"></strong></div>
+            <div class="calc-row"><span>Потрібно на місяць</span>
+              <strong id="r_monthly" style="font-family:'JetBrains Mono',monospace;color:#2563eb"></strong></div>
+            <div class="calc-row"><span>Місяців до мети</span>
+              <strong id="r_months" style="color:#d97706"></strong></div>
+            <div class="calc-row" style="border:none;padding-bottom:0"><span>Дата досягнення</span>
+              <strong id="r_date" style="color:#16a34a"></strong></div>
+            <div style="margin-top:.9rem">
+              <div style="display:flex;justify-content:space-between;
+                font-size:.75rem;font-weight:700;color:#64748b;margin-bottom:.3rem">
+                <span>Прогрес</span><span id="r_progress">0%</span>
+              </div>
+              <div class="prog-track"><div class="prog-fill" id="r_bar" style="width:0%"></div></div>
+            </div>
+          </div>
+          <button class="btn btn-outline-primary w-100 mt-2" id="saveFromCalc" style="font-size:.82rem">
+            <i class="bi bi-plus-circle me-1"></i>Зберегти як ціль
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card fu d2">
+      <div class="card-header">
+        <span><i class="bi bi-plus-circle me-2 text-primary"></i>Нова ціль</span>
+        <button class="btn btn-sm btn-outline-secondary" type="button"
+                data-bs-toggle="collapse" data-bs-target="#goalForm">
+          <i class="bi bi-chevron-down"></i>
+        </button>
+      </div>
+      <div class="collapse" id="goalForm">
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('goals.add') }}" id="addGoalForm">
+
+            <div class="mb-3">
+              <label class="form-label">Іконка та колір</label>
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="iconPicker">
+                {% set icons = [
+                  ('🏠','Житло'),('🚗','Авто'),('✈️','Подорож'),('📱','Гаджети'),
+                  ('🎓','Освіта'),('💍','Весілля'),('👶','Дитина'),('🏋️','Спорт'),
+                  ('💊','Здоров\'я'),('🎯','Інше')
+                ] %}
+                {% for ico, lbl in icons %}
+                <label style="cursor:pointer" title="{{ lbl }}">
+                  <input type="radio" name="icon" value="{{ ico }}"
+                    class="icon-radio" {% if ico == '🎯' %}checked{% endif %}
+                    style="display:none">
+                  <span class="icon-btn">{{ ico }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Назва цілі *</label>
+              <input type="text" name="title" class="form-control"
+                     placeholder="Наприклад: Відпустка в Туреччині" required id="goal_title">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Категорія</label>
+              <select name="category" class="form-select">
+                <option value="Житло">🏠 Житло</option>
+                <option value="Транспорт">🚗 Транспорт</option>
+                <option value="Подорож">✈️ Подорож</option>
+                <option value="Техніка">📱 Техніка</option>
+                <option value="Освіта">🎓 Освіта</option>
+                <option value="Сім'я">👶 Сім'я</option>
+                <option value="Здоров'я">💊 Здоров'я</option>
+                <option value="Інше" selected>🎯 Інше</option>
+              </select>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label">Ціль (₴) *</label>
+                <input type="number" name="target_amount" class="form-control"
+                       placeholder="50 000" min="1" step="1" required id="goal_target">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Вже є (₴)</label>
+                <input type="number" name="saved_amount" class="form-control"
+                       placeholder="0" min="0" step="1" value="0" id="goal_saved">
+              </div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label">Внесок/міс (₴)</label>
+                <input type="number" name="monthly_save" class="form-control"
+                       placeholder="2 000" min="0" step="1" id="goal_monthly">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Дедлайн</label>
+                <input type="date" name="deadline" class="form-control">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Колір</label>
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="colorPicker">
+                {% for c in ['#2563eb','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2','#db2777','#65a30d'] %}
+                <label style="cursor:pointer">
+                  <input type="radio" name="color" value="{{ c }}" class="color-radio"
+                    {% if c == '#2563eb' %}checked{% endif %} style="display:none">
+                  <span class="color-btn" style="background:{{ c }}"></span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-plus-circle me-1"></i>Додати ціль
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-8 fu d2">
+
+    {% if goals %}
+    <div class="row g-3">
+      {% for g in goals %}
+      {% set pct = [(g['saved_amount'] / g['target_amount'] * 100) if g['target_amount'] > 0 else 0, 100] | min %}
+      {% set remaining = g['target_amount'] - g['saved_amount'] %}
+      {% set months_left = (remaining / g['monthly_save']) if g['monthly_save'] > 0 else 0 %}
+
+      <div class="col-12 col-md-6">
+        <div class="goal-card" style="--goal-color:{{ g['color'] }}">
+
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem">
+            <div style="display:flex;align-items:center;gap:.7rem">
+              <div class="goal-icon">{{ g['icon'] }}</div>
+              <div>
+                <div style="font-weight:800;font-size:.95rem;color:#0f172a">{{ g['title'] }}</div>
+                <span style="font-size:.72rem;font-weight:700;padding:.15rem .5rem;border-radius:5px;
+                  background:var(--goal-color)20;color:var(--goal-color)">{{ g['category'] }}</span>
+              </div>
+            </div>
+            <form method="POST" action="{{ url_for('goals.delete', goal_id=g['id']) }}"
+                  onsubmit="return confirm('Видалити ціль?')">
+              <button type="submit"
+                 style="color:var(--text-muted);font-size:.85rem;padding:.2rem .4rem;
+                 border-radius:6px;transition:color .15s;background:none;border:none;cursor:pointer"
+                 title="Видалити">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </form>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:.6rem">
+            <div>
+              <div style="font-size:.7rem;font-weight:700;color:var(--text-muted);
+                text-transform:uppercase;letter-spacing:.4px">Накопичено</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-weight:800;
+                font-size:1.25rem;color:var(--goal-color)">
+                {{ '{:,.0f}'.format(g['saved_amount']) }} ₴
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:.7rem;font-weight:700;color:var(--text-muted);
+                text-transform:uppercase;letter-spacing:.4px">Ціль</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-weight:700;
+                font-size:.95rem;color:#0f172a">
+                {{ '{:,.0f}'.format(g['target_amount']) }} ₴
+              </div>
+            </div>
+          </div>
+
+          <div class="prog-track" style="margin-bottom:.5rem">
+            <div class="prog-fill" style="width:{{ pct }}%;background:var(--goal-color)"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;
+            font-size:.75rem;font-weight:700;color:var(--text-muted);margin-bottom:.9rem">
+            <span>{{ '{:.1f}'.format(pct) }}%</span>
+            <span>Залишилось: {{ '{:,.0f}'.format([remaining,0]|max) }} ₴</span>
+          </div>
+
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.9rem">
+            {% if g['monthly_save'] > 0 %}
+            <div class="goal-chip">
+              <i class="bi bi-calendar-month"></i>
+              {{ '{:,.0f}'.format(g['monthly_save']) }} ₴/міс
+            </div>
+            {% endif %}
+            {% if months_left > 0 and g['monthly_save'] > 0 %}
+            <div class="goal-chip">
+              <i class="bi bi-hourglass-split"></i>
+              ~{{ months_left | int }} міс
+            </div>
+            {% endif %}
+            {% if g['deadline'] %}
+            <div class="goal-chip">
+              <i class="bi bi-calendar-check"></i>
+              до {{ g['deadline'] }}
+            </div>
+            {% endif %}
+          </div>
+
+          {% if pct >= 100 %}
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;
+            padding:.6rem 1rem;text-align:center;font-weight:800;color:#16a34a;font-size:.875rem">
+            🎉 Ціль досягнута!
+          </div>
+          {% else %}
+          <form method="POST" action="{{ url_for('goals.deposit', goal_id=g['id']) }}"
+                style="display:flex;gap:.5rem">
+            <input type="number" name="amount" class="form-control form-control-sm"
+                   placeholder="Сума поповнення" min="1" step="1" required
+                   style="font-size:.82rem">
+            <button type="submit" class="btn btn-sm"
+                    style="background:var(--goal-color);color:#fff;white-space:nowrap;flex-shrink:0">
+              <i class="bi bi-plus-lg me-1"></i>Додати
+            </button>
+          </form>
+          {% endif %}
+
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="card">
+      <div class="card-body text-center py-5">
+        <div style="font-size:3.5rem;margin-bottom:1rem">🎯</div>
+        <div style="font-weight:800;font-size:1.1rem;color:#0f172a;margin-bottom:.4rem">
+          У вас ще немає фінансових цілей
+        </div>
+        <div style="color:var(--text-secondary);font-size:.875rem;margin-bottom:1.5rem">
+          Скористайтеся калькулятором зліва або розкрийте форму «Нова ціль»
+        </div>
+        <button class="btn btn-primary"
+                data-bs-toggle="collapse" data-bs-target="#goalForm">
+          <i class="bi bi-plus-circle me-1"></i>Додати першу ціль
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<style>
+.goal-card{
+  background:#fff;border:1px solid var(--border);border-radius:16px;
+  padding:1.3rem 1.4rem;transition:box-shadow .2s,transform .2s;height:100%;
+  border-top:3px solid var(--goal-color);
+}
+.goal-card:hover{box-shadow:0 8px 30px rgba(0,0,0,.1);transform:translateY(-2px)}
+
+.goal-icon{
+  width:42px;height:42px;border-radius:12px;
+  background:var(--goal-color)15;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.35rem;flex-shrink:0;
+}
+
+.goal-chip{
+  display:inline-flex;align-items:center;gap:.3rem;
+  font-size:.72rem;font-weight:700;padding:.25rem .6rem;
+  border-radius:20px;background:var(--surface);color:var(--text-secondary);
+  border:1px solid var(--border);
+}
+
+.icon-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:9px;font-size:1.2rem;
+  border:2px solid transparent;background:var(--surface);
+  transition:border-color .15s,background .15s;cursor:pointer;
+}
+.icon-radio:checked + .icon-btn{
+  border-color:var(--accent);background:var(--accent-light);
+}
+
+.color-btn{
+  display:block;width:26px;height:26px;border-radius:50%;
+  border:3px solid transparent;transition:border-color .15s,transform .15s;
+  cursor:pointer;
+}
+.color-radio:checked + .color-btn{
+  border-color:#0f172a;transform:scale(1.15);
+}
+
+.calc-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:.45rem 0;border-bottom:1px solid #e2e8f0;
+  font-size:.84rem;color:#334155;
+}
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('calcBtn').addEventListener('click', async () => {
+  const target  = parseFloat(document.getElementById('c_target').value)  || 0;
+  const saved   = parseFloat(document.getElementById('c_saved').value)   || 0;
+  const monthly = parseFloat(document.getElementById('c_monthly').value) || 0;
+  const months  = parseFloat(document.getElementById('c_months').value)  || 0;
+
+  if (!target) { alert('Введіть суму цілі!'); return; }
+  if (!monthly && !months) { alert('Введіть місячний внесок або строк!'); return; }
+
+  const res  = await fetch('/goals/calc', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ target, saved, monthly, months })
+  });
+  const data = await res.json();
+  if (data.error) { alert(data.error); return; }
+
+  const fmt = n => n.toLocaleString('uk-UA', {maximumFractionDigits:0}) + ' ₴';
+
+  document.getElementById('r_remaining').textContent = fmt(data.remaining);
+  document.getElementById('r_monthly').textContent   = fmt(data.monthly_needed) + '/міс';
+  document.getElementById('r_months').textContent    = data.months_needed + ' міс';
+  document.getElementById('r_date').textContent      = data.finish_date;
+  document.getElementById('r_progress').textContent  = data.progress + '%';
+  document.getElementById('r_bar').style.width       = Math.min(data.progress, 100) + '%';
+  document.getElementById('calcResult').style.display = '';
+});
+
+document.getElementById('saveFromCalc').addEventListener('click', () => {
+  const target  = document.getElementById('c_target').value;
+  const saved   = document.getElementById('c_saved').value;
+  const monthly = document.getElementById('c_monthly').value;
+
+  if (target) document.getElementById('goal_target').value  = target;
+  if (saved)  document.getElementById('goal_saved').value   = saved;
+  if (monthly) document.getElementById('goal_monthly').value = monthly;
+
+  const formCollapse = document.getElementById('goalForm');
+  if (!formCollapse.classList.contains('show')) {
+    new bootstrap.Collapse(formCollapse).show();
+  }
+  setTimeout(() => {
+    document.getElementById('goal_title').focus();
+    document.getElementById('addGoalForm').scrollIntoView({behavior:'smooth', block:'start'});
+  }, 350);
+});
+</script>
+{% endblock %}
