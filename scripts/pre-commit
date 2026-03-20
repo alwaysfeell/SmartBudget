@@ -1,0 +1,24 @@
+#!/bin/sh
+# SmartBudget pre-commit hook
+# Runs the static linter before every commit and blocks if critical issues found
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "==> Запуск лінтера SmartBudget..."
+python3 lint.py . > /tmp/lint_output.txt 2>&1
+
+# Count critical issues (exclude E501 line-length as non-blocking)
+CRITICAL=$(grep -E '\[(F401|W605|E711|E712|E999|W291|W293)\]' /tmp/lint_output.txt | wc -l)
+
+cat /tmp/lint_output.txt
+
+if [ "$CRITICAL" -gt 0 ]; then
+  echo ""
+  echo "❌ Знайдено $CRITICAL критичних проблем. Коміт заблоковано."
+  echo "   Виправте помилки та спробуйте знову."
+  exit 1
+fi
+
+echo ""
+echo "✅ Лінтер: критичних проблем не знайдено. Коміт дозволено."
+exit 0

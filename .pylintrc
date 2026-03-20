@@ -1,0 +1,18 @@
+[MASTER]
+ignore=__pycache__,venv,.venv,templates
+ignore-patterns=*.pyc
+
+[FORMAT]
+max-line-length=100
+indent-string='    '
+
+[MESSAGES CONTROL]
+disable=C0114,C0115,C0116,R0903,W0212
+
+[DESIGN]
+max-complexity=10
+max-args=8
+max-locals=20
+
+[TYPECHECK]
+ignored-modules=flask,pandas,sqlite3
