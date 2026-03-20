@@ -3,7 +3,7 @@ import pandas as pd
 from models.utils import rows_to_df
 
 def get_stats(db) -> dict:
-
+    """Return budget statistics for the current and previous month."""
     user   = db.execute('SELECT budget FROM users WHERE id=1').fetchone()
     budget = user['budget'] if user else 14000.0
 

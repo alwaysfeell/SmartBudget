@@ -3,6 +3,7 @@ import pandas as pd
 from models.utils import rows_to_df, get_budget
 
 def get_scenario_analysis(db) -> dict:
+    """Return optimistic, realistic and pessimistic spending scenarios for the current month."""
     rows = db.execute(
         'SELECT name, category, price, store, qty, date FROM expenses WHERE store != ""'
     ).fetchall()
@@ -17,7 +18,10 @@ def get_scenario_analysis(db) -> dict:
 
     month_start = datetime.now().replace(day=1).strftime('%Y-%m-%d')
     month_df    = df[df['date'] >= month_start]
-    base_spent  = float(month_df['total'].sum()) if not month_df.empty else float(df['total'].mean() * 20)
+    base_spent  = (
+        float(month_df['total'].sum()) if not month_df.empty
+        else float(df['total'].mean() * 20)
+    )
     min_prices  = df.groupby('name')['price'].min()
 
     opt_total, savings_by_item = 0.0, []
@@ -28,7 +32,8 @@ def get_scenario_analysis(db) -> dict:
         optimal = min_p * int(grp['qty'].sum())
         opt_total += optimal
         if actual - optimal > 0.5:
-            best_store = df[df['name'] == name].loc[df[df['name'] == name]['price'].idxmin(), 'store']
+            name_mask  = df['name'] == name
+            best_store = df[name_mask].loc[df[name_mask]['price'].idxmin(), 'store']
             savings_by_item.append({
                 'name': name, 'saving': round(actual - optimal, 2),
                 'store': best_store, 'min_p': round(min_p, 2),
@@ -41,14 +46,19 @@ def get_scenario_analysis(db) -> dict:
     pess_saving = round(budget - pess_spent, 2)
 
     actions = [
-        {'action': f'Купуйте «{i["name"]}» у {i["store"]}', 'saving': i['saving'], 'min_p': i['min_p']}
+        {
+            'action': f'Купуйте «{i["name"]}» у {i["store"]}',
+            'saving': i['saving'],
+            'min_p': i['min_p'],
+        }
         for i in savings_by_item[:4]
     ]
     store_overpay = {}
     for store, grp in df.groupby('store'):
         total_p = float((grp['price'] * grp['qty']).sum())
         total_m = sum(
-            float(min_prices.get(n, grp[grp['name'] == n]['price'].min())) * int(grp[grp['name'] == n]['qty'].sum())
+            float(min_prices.get(n, grp[grp['name'] == n]['price'].min()))
+            * int(grp[grp['name'] == n]['qty'].sum())
             for n in grp['name'].unique() if n in min_prices.index
         )
         if total_p - total_m > 0:

@@ -4,6 +4,7 @@ from models.utils import rows_to_df, month_short
 
 
 def get_weekly_chart_data(db) -> dict:
+    """Return daily spending totals for the current month for chart rendering."""
     now   = datetime.now()
     start = now.replace(day=1).strftime('%Y-%m-%d')
     rows  = db.execute(
@@ -51,6 +52,7 @@ def get_weekly_chart_data(db) -> dict:
 
 
 def get_category_chart_data(db) -> dict:
+    """Return spending totals grouped by category for pie/bar chart rendering."""
     now   = datetime.now()
     start = now.replace(day=1).strftime('%Y-%m-%d')
     rows  = db.execute(
@@ -74,6 +76,7 @@ def get_category_chart_data(db) -> dict:
 
 
 def get_savings_chart_data(db) -> dict:
+    """Return monthly spending totals for the savings trend chart."""
     rows = db.execute('SELECT name, price, qty, date, store FROM expenses').fetchall()
     df   = rows_to_df(rows)
 

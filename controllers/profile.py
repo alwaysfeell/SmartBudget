@@ -5,14 +5,19 @@ bp = Blueprint('profile', __name__)
 
 @bp.route('/profile')
 def index():
+    """Render the user profile page."""
     db        = get_db()
     raw_stats = get_stats(db)
     return render_template('profile.html',
                            user=db.execute('SELECT * FROM users WHERE id = 1').fetchone(),
-                           stats={k: float(v) if hasattr(v, 'item') else v for k, v in raw_stats.items()})
+                           stats={
+                               k: float(v) if hasattr(v, 'item') else v
+                               for k, v in raw_stats.items()
+                           })
 
 @bp.route('/profile/update', methods=['POST'])
 def update():
+    """Handle profile update form submission."""
     first_name = request.form.get('first_name', '').strip()
     last_name  = request.form.get('last_name', '').strip()
     email      = request.form.get('email', '').strip()
@@ -28,7 +33,8 @@ def update():
 
     db = get_db()
     db.execute(
-        'UPDATE users SET first_name=?, last_name=?, email=?, city=?, budget=?, currency=? WHERE id=1',
+        'UPDATE users SET first_name=?, last_name=?, email=?,'
+        ' city=?, budget=?, currency=? WHERE id=1',
         (first_name, last_name, email, city, budget, currency)
     )
     db.commit()

@@ -9,6 +9,7 @@ _DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
 @bp.route('/')
 def index():
+    """Render the expenses list, optionally filtered by category."""
     db       = get_db()
     category = request.args.get('category', '')
     query, params = 'SELECT * FROM expenses', []
@@ -18,12 +19,15 @@ def index():
     query += ' ORDER BY date DESC'
     return render_template('expenses.html',
                            expenses=db.execute(query, params).fetchall(),
-                           cats=db.execute('SELECT DISTINCT category FROM expenses ORDER BY category').fetchall(),
+                           cats=db.execute(
+                               'SELECT DISTINCT category FROM expenses ORDER BY category'
+                           ).fetchall(),
                            selected_cat=category,
                            today=datetime.now().strftime('%Y-%m-%d'))
 
 @bp.route('/add', methods=['POST'])
 def add():
+    """Handle add-expense form submission with server-side validation."""
     name     = request.form.get('name', '').strip()
     category = request.form.get('category', '').strip()
     price    = request.form.get('price', '').strip()
@@ -59,6 +63,7 @@ def add():
 
 @bp.route('/delete/<int:expense_id>', methods=['POST'])
 def delete(expense_id):
+    """Delete an expense record by ID."""
     db = get_db()
     db.execute('DELETE FROM expenses WHERE id = ?', (expense_id,))
     db.commit()

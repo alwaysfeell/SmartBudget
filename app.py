@@ -10,6 +10,7 @@ with app.app_context():
 
 @app.teardown_appcontext
 def close_db(error):
+    """Close the database connection at the end of each request."""
     db = g.pop('db', None)
     if db is not None:
         db.close()

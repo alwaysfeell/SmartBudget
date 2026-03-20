@@ -7,6 +7,7 @@ _WANTS_CATS = {'Одяг та взуття', 'Розваги', 'Кафе та р
 _SAVES_CATS = {'Заощадження', 'Інвестиції', 'Погашення боргу'}
 
 def get_budget_rule_503020(db) -> dict:
+    """Analyse spending against the 50/30/20 budget rule and return category breakdown."""
     rows   = db.execute('SELECT category, price, qty, date FROM expenses').fetchall()
     df     = rows_to_df(rows)
     budget = get_budget(db)
@@ -44,7 +45,8 @@ def get_budget_rule_503020(db) -> dict:
     nd, wd, sd = round(needs - tn, 2), round(wants - tw, 2), round(saves - ts, 2)
     ns, ws, ss = status(nd), status(wd), status(sd, 200)
 
-    top_needs = sorted([(c, v) for c, v in cat_breakdown.items() if c in _NEEDS_CATS | set(unclassified)],
+    top_needs = sorted(
+        [(c, v) for c, v in cat_breakdown.items() if c in _NEEDS_CATS | set(unclassified)],
                        key=lambda x: x[1], reverse=True)[:3]
     top_wants = sorted([(c, v) for c, v in cat_breakdown.items() if c in _WANTS_CATS],
                        key=lambda x: x[1], reverse=True)[:3]
@@ -52,18 +54,33 @@ def get_budget_rule_503020(db) -> dict:
     tips = []
     if ns == 'over':
         cats_str = ', '.join(f'«{c}»' for c, _ in top_needs[:2])
-        tips.append({'type': 'needs', 'icon': 'bi-exclamation-triangle', 'color': 'amber',
-                     'text': f'Необхідні витрати перевищують норму на {abs(nd):.0f} ₴. '
-                             f'Найбільші статті: {cats_str}. Оптимізуйте покупки через порівняння цін.'})
+        tips.append({
+            'type': 'needs', 'icon': 'bi-exclamation-triangle', 'color': 'amber',
+            'text': (
+                f'Необхідні витрати перевищують норму на {abs(nd):.0f} ₴. '
+                f'Найбільші статті: {cats_str}.'
+                f' Оптимізуйте покупки через порівняння цін.'
+            ),
+        })
     if ws == 'over':
         cats_str = ', '.join(f'«{c}»' for c, _ in top_wants[:2]) if top_wants else 'розваги'
-        tips.append({'type': 'wants', 'icon': 'bi-cart-x', 'color': 'red',
-                     'text': f'Бажані витрати на {abs(wd):.0f} ₴ більше норми (30%). '
-                             f'Категорії: {cats_str}. Скорочення дасть +{abs(wd):.0f} ₴ на заощадження.'})
+        tips.append({
+            'type': 'wants', 'icon': 'bi-cart-x', 'color': 'red',
+            'text': (
+                f'Бажані витрати на {abs(wd):.0f} ₴ більше норми (30%). '
+                f'Категорії: {cats_str}.'
+                f' Скорочення дасть +{abs(wd):.0f} ₴ на заощадження.'
+            ),
+        })
     if ss == 'under':
-        tips.append({'type': 'saves', 'icon': 'bi-piggy-bank', 'color': 'blue',
-                     'text': f'Заощадження ({saves:.0f} ₴) нижче цілі {ts:.0f} ₴ на {abs(sd):.0f} ₴. '
-                             f'Навіть відкладаючи {abs(sd)/12:.0f} ₴ щотижня — ціль буде досягнута.'})
+        tips.append({
+            'type': 'saves', 'icon': 'bi-piggy-bank', 'color': 'blue',
+            'text': (
+                f'Заощадження ({saves:.0f} ₴) нижче цілі {ts:.0f} ₴'
+                f' на {abs(sd):.0f} ₴. Навіть відкладаючи'
+                f' {abs(sd)/12:.0f} ₴ щотижня — ціль буде досягнута.'
+            ),
+        })
     if not tips:
         tips.append({'type': 'ok', 'icon': 'bi-check-circle', 'color': 'green',
                      'text': 'Чудово! Ваші витрати близькі до правила 50/30/20.'})

@@ -10,6 +10,7 @@ bp = Blueprint('recommendations', __name__)
 
 @bp.route('/recommendations')
 def index():
+    """Render the recommendations page with personalised advice."""
     db        = get_db()
     raw_stats = get_stats(db)
     stats     = {k: float(v) if hasattr(v, 'item') else v for k, v in raw_stats.items()}

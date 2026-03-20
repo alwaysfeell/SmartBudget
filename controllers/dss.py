@@ -11,6 +11,7 @@ bp = Blueprint('dss', __name__)
 
 @bp.route('/dss')
 def index():
+    """Render the DSS (Decision Support System) dashboard."""
     db        = get_db()
     raw_stats = get_stats(db)
     stats     = {k: float(v) if hasattr(v, 'item') else v for k, v in raw_stats.items()}

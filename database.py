@@ -4,12 +4,14 @@ from flask import g
 DATABASE = 'smartbudget.db'
 
 def get_db():
+    """Return the current database connection, creating it if necessary."""
     if 'db' not in g:
         g.db = sqlite3.connect(DATABASE)
         g.db.row_factory = sqlite3.Row
     return g.db
 
 def init_db():
+    """Initialise the SQLite schema and seed demo data if the DB is empty."""
     db = sqlite3.connect(DATABASE)
     db.row_factory = sqlite3.Row
     db.executescript('''
@@ -298,6 +300,7 @@ def _seed_demo_data(db):
 
 
 def init_goals_table(db):
+    """Create the goals table if it does not already exist."""
     db.execute('''
         CREATE TABLE IF NOT EXISTS goals (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,

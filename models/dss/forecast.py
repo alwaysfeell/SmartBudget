@@ -7,6 +7,7 @@ _SEASONAL = {1: -0.02, 2: -0.05, 3: 0.00, 4: 0.03, 5: 0.05,
              11: 0.05, 12: 0.12}
 
 def get_forecast(db) -> dict:
+    """Forecast next-month spending based on linear regression over past months."""
     rows = db.execute('SELECT price, qty, date, category FROM expenses').fetchall()
     df   = rows_to_df(rows)
     now  = datetime.now()
@@ -70,13 +71,22 @@ def get_forecast(db) -> dict:
     risk_pct  = round((next_pred / budget) * 100, 1) if budget > 0 else 0
     if risk_pct > 100:
         risk_level = 'high'
-        risk_text  = f'Прогноз ({next_pred:.0f} ₴) перевищує бюджет ({budget:.0f} ₴) на {next_pred - budget:.0f} ₴'
+        risk_text  = (
+            f'Прогноз ({next_pred:.0f} ₴) перевищує'
+            f' бюджет ({budget:.0f} ₴) на {next_pred - budget:.0f} ₴'
+        )
     elif risk_pct > 85:
         risk_level = 'medium'
-        risk_text  = f'Прогноз ({next_pred:.0f} ₴) близький до бюджету, залишок лише {budget - next_pred:.0f} ₴'
+        risk_text  = (
+            f'Прогноз ({next_pred:.0f} ₴) близький до бюджету,'
+            f' залишок лише {budget - next_pred:.0f} ₴'
+        )
     else:
         risk_level = 'low'
-        risk_text  = f'Прогноз ({next_pred:.0f} ₴) в межах бюджету ({budget:.0f} ₴), запас {budget - next_pred:.0f} ₴'
+        risk_text  = (
+            f'Прогноз ({next_pred:.0f} ₴) в межах бюджету ({budget:.0f} ₴),'
+            f' запас {budget - next_pred:.0f} ₴'
+        )
 
     return {
         'history_labels':  month_labels,

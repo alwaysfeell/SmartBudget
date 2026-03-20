@@ -11,16 +11,23 @@ _MONTH_NAMES = ['Січень','Лютий','Березень','Квітень',
 
 @bp.route('/')
 def index():
+    """Render the savings goals overview page."""
     db        = get_db()
     raw_stats = get_stats(db)
     return render_template('goals.html',
-                           goals=db.execute('SELECT * FROM goals ORDER BY created_at DESC').fetchall(),
-                           stats={k: float(v) if hasattr(v, 'item') else v for k, v in raw_stats.items()},
+                           goals=db.execute(
+                               'SELECT * FROM goals ORDER BY created_at DESC'
+                           ).fetchall(),
+                           stats={
+                               k: float(v) if hasattr(v, 'item') else v
+                               for k, v in raw_stats.items()
+                           },
                            today=datetime.now().strftime('%Y-%m-%d'))
 
 
 @bp.route('/add', methods=['POST'])
 def add():
+    """Handle add-goal form submission."""
     title = request.form.get('title', '').strip()
     if not title:
         flash('Введіть назву цілі!', 'danger')
@@ -37,7 +44,8 @@ def add():
 
     db = get_db()
     db.execute(
-        'INSERT INTO goals (title, target_amount, saved_amount, monthly_save, deadline, category, icon, color) '
+        'INSERT INTO goals'
+        ' (title, target_amount, saved_amount, monthly_save, deadline, category, icon, color)'
         'VALUES (?,?,?,?,?,?,?,?)',
         (title, target, saved, monthly,
          request.form.get('deadline', '').strip(),
@@ -52,6 +60,7 @@ def add():
 
 @bp.route('/deposit/<int:goal_id>', methods=['POST'])
 def deposit(goal_id):
+    """Handle deposit to a savings goal."""
     try:
         amount = float(request.form.get('amount', '0'))
         if amount <= 0:
@@ -68,6 +77,7 @@ def deposit(goal_id):
 
 @bp.route('/delete/<int:goal_id>', methods=['POST'])
 def delete(goal_id):
+    """Delete a savings goal by ID."""
     db = get_db()
     db.execute('DELETE FROM goals WHERE id = ?', (goal_id,))
     db.commit()
@@ -77,6 +87,7 @@ def delete(goal_id):
 
 @bp.route('/calc', methods=['POST'])
 def calc():
+    """Return JSON with the required monthly saving amount."""
     data = request.get_json(force=True)
     try:
         target  = float(data.get('target',  0))

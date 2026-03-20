@@ -4,13 +4,17 @@ from models.utils import rows_to_df
 from models.stats import get_stats
 
 def generate_advice(db, count: int = 1):
+    """Analyse purchase history and return personalised saving recommendations."""
     rows = db.execute(
         'SELECT name, category, price, store, date, qty FROM expenses WHERE store != ""'
     ).fetchall()
     df = rows_to_df(rows)
 
     if df.empty:
-        fallback = 'Додайте покупки з вказанням магазину — система проаналізує ціни та надасть персональні рекомендації.'
+        fallback = (
+            'Додайте покупки з вказанням магазину — система проаналізує ціни '
+            'та надасть персональні рекомендації.'
+        )
         if count == 1:
             return fallback
         return [{'title': 'Недостатньо даних', 'body': fallback, 'saving': '—', 'tag': 'tip'}]
@@ -41,9 +45,12 @@ def generate_advice(db, count: int = 1):
         diff_pct = round((item['max_price'] - item['min_price']) / item['min_price'] * 100)
         advices.append({
             'title':  f'Переплата за «{item["name"]}»',
-            'body':   (f'Ви купували «{item["name"]}» у {item["worst_store"]} за {item["max_price"]:.0f} ₴, '
-                       f'хоча у {item["best_store"]} ціна {item["min_price"]:.0f} ₴ ({diff_pct}% різниця). '
-                       f'Загальна переплата: {item["overpaid"]:.0f} ₴.'),
+            'body':   (
+                f'Ви купували «{item["name"]}» у {item["worst_store"]}'
+                f' за {item["max_price"]:.0f} ₴, хоча у {item["best_store"]}'
+                f' ціна {item["min_price"]:.0f} ₴ ({diff_pct}% різниця).'
+                f' Загальна переплата: {item["overpaid"]:.0f} ₴.'
+            ),
             'saving': f'−{item["overpaid"]:.0f} ₴',
             'tag':    'economy',
         })
@@ -65,8 +72,11 @@ def generate_advice(db, count: int = 1):
         alt_text  = f' Спробуйте частіше купувати у {best_alt}.' if best_alt else ''
         advices.append({
             'title':  f'{worst} — не найвигідніший вибір',
-            'body':   (f'У {worst} ви переплатили {store_overpay[worst]:.0f} ₴ '
-                       f'порівняно з мінімальними цінами на ті самі товари в інших магазинах.{alt_text}'),
+            'body':   (
+                f'У {worst} ви переплатили {store_overpay[worst]:.0f} ₴'
+                f' порівняно з мінімальними цінами на ті самі товари'
+                f' в інших магазинах.{alt_text}'
+            ),
             'saving': f'−{store_overpay[worst]:.0f} ₴',
             'tag':    'warning',
         })
@@ -80,11 +90,16 @@ def generate_advice(db, count: int = 1):
         total_month = float(month_df['total'].sum())
         pct         = round(top_sum / total_month * 100) if total_month > 0 else 0
         cat_stores  = df[df['category'] == top_cat].groupby('store')['price'].mean()
-        store_hint  = f' Найвигідніше купувати у {cat_stores.idxmin()}.' if not cat_stores.empty else ''
+        store_hint  = (
+            f' Найвигідніше купувати у {cat_stores.idxmin()}.'
+            if not cat_stores.empty else ''
+        )
         advices.append({
             'title':  f'«{top_cat}» — {pct}% ваших витрат цього місяця',
-            'body':   (f'У поточному місяці ви витратили {top_sum:.0f} ₴ на «{top_cat}» — '
-                       f'це {pct}% від усіх витрат ({total_month:.0f} ₴).{store_hint}'),
+            'body':   (
+                f'У поточному місяці ви витратили {top_sum:.0f} ₴ на «{top_cat}» —'
+                f' це {pct}% від усіх витрат ({total_month:.0f} ₴).{store_hint}'
+            ),
             'saving': f'до {round(top_sum * 0.12):.0f} ₴',
             'tag':    'warning',
         })
@@ -106,10 +121,13 @@ def generate_advice(db, count: int = 1):
     for item in sorted(trend_items, key=lambda x: x['growth'], reverse=True)[:2]:
         advices.append({
             'title':  f'«{item["name"]}» подорожчав на {item["growth"]:.0f}%',
-            'body':   (f'З першої фіксованої покупки ціна «{item["name"]}» '
-                       f'зросла з {item["first_price"]:.0f} ₴ до {item["last_price"]:.0f} ₴ '
-                       f'(+{item["growth"]:.0f}%). '
-                       f'Найнижча зафіксована ціна — {item["min_price"]:.0f} ₴ у {item["best_store"]}.'),
+            'body':   (
+                f'З першої фіксованої покупки ціна «{item["name"]}»'
+                f' зросла з {item["first_price"]:.0f} ₴'
+                f' до {item["last_price"]:.0f} ₴ (+{item["growth"]:.0f}%).'
+                f' Найнижча зафіксована ціна —'
+                f' {item["min_price"]:.0f} ₴ у {item["best_store"]}.'
+            ),
             'saving': f'−{round(item["last_price"] - item["min_price"]):.0f} ₴/шт',
             'tag':    'warning',
         })
@@ -129,9 +147,12 @@ def generate_advice(db, count: int = 1):
         worst = max(store_efficiency, key=store_efficiency.get)
         advices.append({
             'title':  f'{best} — найвигідніший магазин у вашій історії',
-            'body':   (f'За вашими даними, {best} у середньому лише на {store_efficiency[best]:.0f}% '
-                       f'дорожче мінімальних цін. '
-                       f'{worst} у середньому на {store_efficiency[worst]:.0f}% дорожче мінімуму.'),
+            'body':   (
+                f'За вашими даними, {best} у середньому лише на'
+                f' {store_efficiency[best]:.0f}% дорожче мінімальних цін.'
+                f' {worst} у середньому на'
+                f' {store_efficiency[worst]:.0f}% дорожче мінімуму.'
+            ),
             'saving': f'до {round(store_efficiency[worst] - store_efficiency[best]):.0f}% різниці',
             'tag':    'economy',
         })
@@ -146,11 +167,13 @@ def generate_advice(db, count: int = 1):
             if diff_cat > 5:
                 advices.append({
                     'title':  f'Оптимізуйте покупки «{top_cat}»',
-                    'body':   (f'Ви найчастіше купуєте товари категорії «{top_cat}» '
-                               f'({int(freq_cats.iloc[0])} покупок). '
-                               f'Середня ціна у {by_store.index[0]}: {by_store.iloc[0]:.0f} ₴, '
-                               f'у {by_store.index[-1]}: {by_store.iloc[-1]:.0f} ₴. '
-                               f'Перевага {by_store.index[0]} — {diff_cat:.0f} ₴ на одиниці товару.'),
+                    'body':   (
+                        f'Ви найчастіше купуєте товари категорії «{top_cat}»'
+                        f' ({int(freq_cats.iloc[0])} покупок).'
+                        f' Середня ціна у {by_store.index[0]}: {by_store.iloc[0]:.0f} ₴,'
+                        f' у {by_store.index[-1]}: {by_store.iloc[-1]:.0f} ₴.'
+                        f' Перевага {by_store.index[0]} — {diff_cat:.0f} ₴ на одиниці.'
+                    ),
                     'saving': f'−{diff_cat:.0f} ₴/од.',
                     'tag':    'tip',
                 })
@@ -160,17 +183,25 @@ def generate_advice(db, count: int = 1):
         if float(stats.get('budget_pct', 0)) > 80:
             advices.append({
                 'title':  'Бюджет вичерпується',
-                'body':   (f'Ви використали {stats["budget_pct"]:.0f}% місячного бюджету '
-                           f'({stats["spent"]:.0f} ₴ з {stats["budget"]:.0f} ₴). '
-                           f'Залишок: {stats["remaining"]:.0f} ₴.'),
+                'body':   (
+                f'Ви використали {stats["budget_pct"]:.0f}% місячного бюджету'
+                f' ({stats["spent"]:.0f} ₴ з {stats["budget"]:.0f} ₴).'
+                f' Залишок: {stats["remaining"]:.0f} ₴.'
+            ),
                 'saving': '—',
                 'tag':    'warning',
             })
 
     if count == 1:
-        return advices[0]['body'] if advices else 'Додайте більше покупок з різних магазинів для аналізу!'
+        return (
+            advices[0]['body'] if advices
+            else 'Додайте більше покупок з різних магазинів для аналізу!'
+        )
     return advices[:count] if advices else [
         {'title': 'Потрібно більше даних',
-         'body':  'Додайте покупки з різних магазинів — тоді система порівняє ціни та надасть персональні поради.',
+         'body':  (
+             'Додайте покупки з різних магазинів —'
+             ' тоді система порівняє ціни та надасть персональні поради.'
+         ),
          'saving': '—', 'tag': 'tip'}
     ]

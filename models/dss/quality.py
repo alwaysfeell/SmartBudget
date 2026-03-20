@@ -2,6 +2,7 @@ import pandas as pd
 from models.utils import rows_to_df
 
 def get_advice_quality(db) -> dict:
+    """Evaluate data quality and return a readiness score for DSS recommendations."""
     rows = db.execute('SELECT name, price, store, date, qty FROM expenses').fetchall()
     df   = rows_to_df(rows)
 
@@ -46,17 +47,25 @@ def get_advice_quality(db) -> dict:
 
     improvements = []
     if coverage_pct < 60:
-        improvements.append({'metric': 'Охоплення цін', 'score': coverage_pct,
-                              'hint': f'Додайте ціни для {total_items - covered} товарів у ≥2 магазинах.'})
+        improvements.append({
+            'metric': 'Охоплення цін', 'score': coverage_pct,
+            'hint': f'Додайте ціни для {total_items - covered} товарів у ≥2 магазинах.',
+        })
     if total_stores < 4:
-        improvements.append({'metric': 'Різноманіття магазинів', 'score': diversity,
-                              'hint': f'Зараз {total_stores} магазини. Додайте ще {4 - total_stores} нових мереж.'})
+        improvements.append({
+            'metric': 'Різноманіття магазинів', 'score': diversity,
+            'hint': f'Зараз {total_stores} магазини. Додайте ще {4 - total_stores} нових мереж.',
+        })
     if months_depth < 3:
-        improvements.append({'metric': 'Глибина історії', 'score': history_score,
-                              'hint': f'Є дані за {months_depth:.0f} міс. Для прогнозу потрібно ≥3 місяці.'})
+        improvements.append({
+            'metric': 'Глибина історії', 'score': history_score,
+            'hint': f'Є дані за {months_depth:.0f} міс. Для прогнозу потрібно ≥3 місяці.',
+        })
     if saving_score < 60:
-        improvements.append({'metric': 'Реалізація заощаджень', 'score': saving_score,
-                              'hint': f'{total_cmp - opt} з {total_cmp} покупок — не за мінімальною ціною.'})
+        improvements.append({
+            'metric': 'Реалізація заощаджень', 'score': saving_score,
+            'hint': f'{total_cmp - opt} з {total_cmp} покупок — не за мінімальною ціною.',
+        })
 
     store_stats = sorted([
         {'store': s, 'records': len(g), 'items': g['name'].nunique(),

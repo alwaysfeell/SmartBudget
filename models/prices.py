@@ -2,7 +2,7 @@ from models.utils import rows_to_df
 
 
 def get_price_comparison(db) -> list:
-
+    """Return a list of products with min/max prices across different stores."""
     rows = db.execute(
         'SELECT name, category, price, store FROM expenses WHERE store != "" ORDER BY name'
     ).fetchall()
