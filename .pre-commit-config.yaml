@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: smartbudget-lint
+        name: SmartBudget Linter
+        entry: python lint.py .
+        language: system
+        types: [python]
+        pass_filenames: false
