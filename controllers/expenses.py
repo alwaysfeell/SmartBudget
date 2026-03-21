@@ -7,9 +7,18 @@ bp = Blueprint('expenses', __name__, url_prefix='/expenses')
 
 _DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
+
 @bp.route('/')
 def index():
-    """Render the expenses list, optionally filtered by category."""
+    """Render the expenses list, optionally filtered by category.
+
+    Reads optional 'category' query parameter and applies it as a
+    WHERE filter on the expenses table.
+
+    Returns:
+        flask.Response: Rendered expenses.html template with all matching
+            expense records sorted by date descending.
+    """
     db       = get_db()
     category = request.args.get('category', '')
     query, params = 'SELECT * FROM expenses', []
@@ -25,9 +34,18 @@ def index():
                            selected_cat=category,
                            today=datetime.now().strftime('%Y-%m-%d'))
 
+
 @bp.route('/add', methods=['POST'])
 def add():
-    """Handle add-expense form submission with server-side validation."""
+    """Handle add-expense form submission with server-side validation.
+
+    Validates name length, date format (YYYY-MM-DD), price > 0, and qty >= 1.
+    On success inserts the record and flashes a success message.
+    On failure flashes an error message and redirects back.
+
+    Returns:
+        flask.Response: Redirect to expenses.index.
+    """
     name     = request.form.get('name', '').strip()
     category = request.form.get('category', '').strip()
     price    = request.form.get('price', '').strip()
@@ -35,7 +53,6 @@ def add():
     date     = request.form.get('date', '').strip()
     qty      = request.form.get('qty', '1').strip()
 
-    # Серверна валідація
     if not name or len(name) > 200:
         flash('Назва товару обов\'язкова (до 200 символів)!', 'danger')
         return redirect(url_for('expenses.index'))
@@ -61,9 +78,17 @@ def add():
     flash(f'Покупку «{name}» успішно додано!', 'success')
     return redirect(url_for('expenses.index'))
 
+
 @bp.route('/delete/<int:expense_id>', methods=['POST'])
 def delete(expense_id):
-    """Delete an expense record by ID."""
+    """Delete an expense record by ID and redirect back to the list.
+
+    Args:
+        expense_id (int): Primary key of the expense record to delete.
+
+    Returns:
+        flask.Response: Redirect to expenses.index.
+    """
     db = get_db()
     db.execute('DELETE FROM expenses WHERE id = ?', (expense_id,))
     db.commit()

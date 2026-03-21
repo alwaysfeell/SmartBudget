@@ -4,7 +4,21 @@ from models.utils import rows_to_df, month_short
 
 
 def get_weekly_chart_data(db) -> dict:
-    """Return daily spending totals for the current month for chart rendering."""
+    """Return weekly spending totals grouped by top category for chart rendering.
+
+    Splits the current month into 7-day intervals and calculates
+    spending per category for each interval. Returns data formatted
+    for Chart.js grouped bar chart.
+
+    Args:
+        db: Active SQLite database connection (flask.g.db).
+
+    Returns:
+        dict: Keys:
+            labels (list[str]): Week range labels, e.g. ['1–7 Бер', '8–14 Бер'].
+            datasets (list[dict]): One dict per top category with keys
+                label, data (list[float]), backgroundColor, borderRadius.
+    """
     now   = datetime.now()
     start = now.replace(day=1).strftime('%Y-%m-%d')
     rows  = db.execute(
@@ -52,7 +66,20 @@ def get_weekly_chart_data(db) -> dict:
 
 
 def get_category_chart_data(db) -> dict:
-    """Return spending totals grouped by category for pie/bar chart rendering."""
+    """Return spending totals grouped by category for pie/bar chart rendering.
+
+    Aggregates current month expenses by category and calculates
+    percentage share of each category in total spending.
+
+    Args:
+        db: Active SQLite database connection (flask.g.db).
+
+    Returns:
+        dict: Keys:
+            labels (list[str]): Category names sorted by total descending.
+            values (list[float]): Percentage share of each category (sums to 100).
+            colors (list[str]): Hex colour codes for each category slice.
+    """
     now   = datetime.now()
     start = now.replace(day=1).strftime('%Y-%m-%d')
     rows  = db.execute(
@@ -76,7 +103,21 @@ def get_category_chart_data(db) -> dict:
 
 
 def get_savings_chart_data(db) -> dict:
-    """Return monthly spending totals for the savings trend chart."""
+    """Return monthly realised and potential savings data for the trend chart.
+
+    For each of the last 6 months calculates:
+        - actual: savings already achieved (bought below max recorded price).
+        - planned: additional savings possible (bought above min recorded price).
+
+    Args:
+        db: Active SQLite database connection (flask.g.db).
+
+    Returns:
+        dict: Keys:
+            labels (list[str]): Month labels, e.g. ['Жов 2024', 'Лис 2024'].
+            actual (list[float]): Realised savings per month in UAH.
+            planned (list[float]): Potential additional savings per month in UAH.
+    """
     rows = db.execute('SELECT name, price, qty, date, store FROM expenses').fetchall()
     df   = rows_to_df(rows)
 

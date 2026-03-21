@@ -6,12 +6,18 @@ from models.stats import get_stats
 
 bp = Blueprint('goals', __name__, url_prefix='/goals')
 
-_MONTH_NAMES = ['Січень','Лютий','Березень','Квітень','Травень','Червень',
-                'Липень','Серпень','Вересень','Жовтень','Листопад','Грудень']
+_MONTH_NAMES = ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень',
+                'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень']
+
 
 @bp.route('/')
 def index():
-    """Render the savings goals overview page."""
+    """Render the savings goals overview page.
+
+    Returns:
+        flask.Response: Rendered goals.html with all goals sorted by
+            creation date descending and current budget statistics.
+    """
     db        = get_db()
     raw_stats = get_stats(db)
     return render_template('goals.html',
@@ -27,7 +33,13 @@ def index():
 
 @bp.route('/add', methods=['POST'])
 def add():
-    """Handle add-goal form submission."""
+    """Handle add-goal form submission with server-side validation.
+
+    Validates that title is non-empty and target_amount > 0.
+
+    Returns:
+        flask.Response: Redirect to goals.index.
+    """
     title = request.form.get('title', '').strip()
     if not title:
         flash('Введіть назву цілі!', 'danger')
@@ -60,7 +72,14 @@ def add():
 
 @bp.route('/deposit/<int:goal_id>', methods=['POST'])
 def deposit(goal_id):
-    """Handle deposit to a savings goal."""
+    """Handle a deposit (partial payment) to a savings goal.
+
+    Args:
+        goal_id (int): Primary key of the goal to update.
+
+    Returns:
+        flask.Response: Redirect to goals.index.
+    """
     try:
         amount = float(request.form.get('amount', '0'))
         if amount <= 0:
@@ -77,7 +96,14 @@ def deposit(goal_id):
 
 @bp.route('/delete/<int:goal_id>', methods=['POST'])
 def delete(goal_id):
-    """Delete a savings goal by ID."""
+    """Delete a savings goal by ID.
+
+    Args:
+        goal_id (int): Primary key of the goal to delete.
+
+    Returns:
+        flask.Response: Redirect to goals.index.
+    """
     db = get_db()
     db.execute('DELETE FROM goals WHERE id = ?', (goal_id,))
     db.commit()
@@ -87,7 +113,15 @@ def delete(goal_id):
 
 @bp.route('/calc', methods=['POST'])
 def calc():
-    """Return JSON with the required monthly saving amount."""
+    """Return JSON with the required monthly saving amount and estimated finish date.
+
+    Accepts JSON body with keys: target, saved, monthly (or months).
+    Calculates how many months are needed and the projected finish date.
+
+    Returns:
+        flask.Response: JSON with keys remaining, monthly_needed,
+            months_needed, finish_date, progress.
+    """
     data = request.get_json(force=True)
     try:
         target  = float(data.get('target',  0))

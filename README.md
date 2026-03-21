@@ -239,8 +239,54 @@ http://localhost:5000
 |GET|`/profile`|Особистий кабінет|
 
 ---
-
+ 
+## Документування коду
+ 
+Стандарт проєкту — **Google-style docstrings** (PEP 257).
+ 
+### Правила для розробників
+ 
+- Кожна публічна функція та метод повинні мати docstring
+- Docstring містить: короткий опис, блок `Args:` з параметрами, блок `Returns:` з типом та описом
+- Алгоритмічні функції (forecast, generate_advice) — додатково описувати блок `Algorithm:`
+- При зміні сигнатури функції — оновити docstring в тому ж коміті
+- Приватні функції (починаються з `_`) — docstring за бажанням
+ 
+### Приклад правильного docstring
+ 
+```python
+def get_stats(db) -> dict:
+    """Return budget statistics for the current and previous month.
+ 
+    Args:
+        db: Active SQLite database connection (flask.g.db).
+ 
+    Returns:
+        dict: Keys: budget, spent, spent_prev, pct_change,
+              remaining, budget_pct, savings, total_purchases.
+    """
+```
+ 
+### Генерація HTML-документації
+ 
+```bash
+# Встановити інструменти (одноразово)
+pip install sphinx sphinx-rtd-theme pydocstyle
+ 
+# Згенерувати документацію
+sphinx-build -b html docs_sphinx docs_html
+ 
+# Або через Makefile
+make docs
+ 
+# Перевірити якість docstrings
+make doccheck
+```
+ 
+Документація генерується у папку `docs_html/` — відкрийте `docs_html/index.html` у браузері.  
+Детальна інструкція: [docs/generate_docs.md](docs/generate_docs.md)
+---
+ 
 ## Ліцензія
 
 Цей проєкт розповсюджується під ліцензією [MIT](LICENSE).
-

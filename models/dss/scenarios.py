@@ -2,8 +2,32 @@ from datetime import datetime
 import pandas as pd
 from models.utils import rows_to_df, get_budget
 
+
 def get_scenario_analysis(db) -> dict:
-    """Return optimistic, realistic and pessimistic spending scenarios for the current month."""
+    """Return optimistic, realistic and pessimistic spending scenarios for the current month.
+
+    Builds three scenarios based on historical purchase data:
+        - Scenario A (Optimistic): all items bought at minimum recorded prices.
+        - Scenario B (Realistic): current spending behaviour unchanged.
+        - Scenario C (Pessimistic): prices grow at ~7% annual inflation rate.
+
+    Also generates a ranked list of concrete saving actions (buy product X
+    at store Y) sorted by potential saving amount.
+
+    Args:
+        db: Active SQLite database connection (flask.g.db).
+
+    Returns:
+        dict: Keys:
+            budget (float): Monthly budget limit.
+            scenarios (list[dict]): Three scenario dicts, each with keys
+                id, label, tag, icon, desc, spent, saving, remaining,
+                annual_effect.
+            actions (list[dict]): Up to 5 recommended actions with keys
+                action (str), saving (float), min_p (float | None).
+            top_savings (list[dict]): Top products with highest saving potential.
+            potential_opt (float): Total achievable saving in optimistic scenario.
+    """
     rows = db.execute(
         'SELECT name, category, price, store, qty, date FROM expenses WHERE store != ""'
     ).fetchall()

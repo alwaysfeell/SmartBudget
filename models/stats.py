@@ -2,8 +2,28 @@ from datetime import datetime, timedelta
 import pandas as pd
 from models.utils import rows_to_df
 
+
 def get_stats(db) -> dict:
-    """Return budget statistics for the current and previous month."""
+    """Return budget statistics for the current and previous month.
+
+    Calculates total spending, budget utilization percentage,
+    month-over-month percentage change, remaining budget,
+    and potential savings based on price comparison across stores.
+
+    Args:
+        db: Active SQLite database connection (flask.g.db).
+
+    Returns:
+        dict: Keys:
+            budget (float): Monthly budget limit.
+            spent (float): Total spent in the current month.
+            spent_prev (float): Total spent in the previous month.
+            pct_change (float): Month-over-month change in percent.
+            remaining (float): Budget minus current spending.
+            budget_pct (float): Percentage of budget used (capped at 100).
+            savings (float): Potential savings from cheaper store alternatives.
+            total_purchases (int): Number of purchases this month.
+    """
     user   = db.execute('SELECT budget FROM users WHERE id=1').fetchone()
     budget = user['budget'] if user else 14000.0
 
@@ -49,7 +69,19 @@ def get_stats(db) -> dict:
         'total_purchases': total_purch,
     }
 
+
 def _calc_potential_savings(db) -> float:
+    """Calculate total potential savings by comparing last paid vs minimum prices.
+
+    Compares the most recent price paid for each product against the
+    historically lowest price recorded across all stores.
+
+    Args:
+        db: Active SQLite database connection (flask.g.db).
+
+    Returns:
+        float: Sum of overpayments compared to minimum recorded prices.
+    """
     rows = db.execute(
         'SELECT name, price, store FROM expenses WHERE store != ""'
     ).fetchall()

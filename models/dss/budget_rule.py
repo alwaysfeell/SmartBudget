@@ -7,7 +7,25 @@ _WANTS_CATS = {'Одяг та взуття', 'Розваги', 'Кафе та р
 _SAVES_CATS = {'Заощадження', 'Інвестиції', 'Погашення боргу'}
 
 def get_budget_rule_503020(db) -> dict:
-    """Analyse spending against the 50/30/20 budget rule and return category breakdown."""
+    """Analyse spending against the 50/30/20 budget rule and return category breakdown.
+
+    Classifies every expense category into one of three buckets:
+        - Needs (50% target): essentials such as groceries, transport, utilities.
+        - Wants (30% target): discretionary spending such as dining out, hobbies.
+        - Saves (20% target): savings, investments, debt repayment.
+    Unrecognised categories are counted as Needs.
+
+    Args:
+        db: Active SQLite database connection (flask.g.db).
+
+    Returns:
+        dict: Keys include budget, total_spent, needs, wants, saves,
+              needs_pct, wants_pct, saves_pct, target_needs, target_wants,
+              target_saves, needs_delta, wants_delta, saves_delta,
+              needs_status, wants_status, saves_status (ok/over/under),
+              cat_breakdown, top_needs, top_wants, unclassified, tips,
+              recommended_save.
+    """
     rows   = db.execute('SELECT category, price, qty, date FROM expenses').fetchall()
     df     = rows_to_df(rows)
     budget = get_budget(db)
@@ -99,6 +117,17 @@ def get_budget_rule_503020(db) -> dict:
 
 
 def _empty(budget, tn, tw, ts):
+    """Return a zeroed-out result dict when there are no expense records.
+
+    Args:
+        budget: Monthly budget amount.
+        tn: Target amount for needs (50% of budget).
+        tw: Target amount for wants (30% of budget).
+        ts: Target amount for saves (20% of budget).
+
+    Returns:
+        dict: Same structure as get_budget_rule_503020 but all values are zero.
+    """
     return {
         'budget': budget, 'total_spent': 0,
         'needs': 0, 'wants': 0, 'saves': 0,

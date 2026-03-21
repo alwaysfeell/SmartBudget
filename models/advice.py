@@ -3,8 +3,30 @@ import pandas as pd
 from models.utils import rows_to_df
 from models.stats import get_stats
 
+
 def generate_advice(db, count: int = 1):
-    """Analyse purchase history and return personalised saving recommendations."""
+    """Analyse purchase history and return personalised saving recommendations.
+
+    Runs up to six independent analysis algorithms and merges results:
+        1. Overpayment per product across stores (price comparison).
+        2. Most expensive store overall vs alternatives.
+        3. Top spending category this month with store hint.
+        4. Price trend detection (products that grew in price >= 5%).
+        5. Store efficiency ranking (average premium over minimum prices).
+        6. Category optimisation for the most frequently purchased category.
+    Falls back to a budget-warning tip if fewer than 2 advices are generated.
+
+    Args:
+        db: Active SQLite database connection (flask.g.db).
+        count (int): Number of advice items to return. Use 1 for a single
+            string (dashboard widget), or >1 for a list of dicts
+            (recommendations page). Defaults to 1.
+
+    Returns:
+        str | list[dict]: If count == 1, returns a plain text advice string.
+            Otherwise returns a list of dicts with keys:
+            title (str), body (str), saving (str), tag (str).
+    """
     rows = db.execute(
         'SELECT name, category, price, store, date, qty FROM expenses WHERE store != ""'
     ).fetchall()

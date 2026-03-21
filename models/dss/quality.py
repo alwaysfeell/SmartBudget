@@ -1,8 +1,28 @@
 import pandas as pd
 from models.utils import rows_to_df
 
+
 def get_advice_quality(db) -> dict:
-    """Evaluate data quality and return a readiness score for DSS recommendations."""
+    """Evaluate data quality and return a readiness score for DSS recommendations.
+
+    Computes five quality metrics and combines them into an overall score:
+        - Coverage (30%): share of products recorded in 2+ stores.
+        - Diversity (20%): number of unique stores (target >= 5).
+        - History depth (20%): months of data available (target >= 6).
+        - Saving score (20%): share of purchases made at minimum price.
+        - Trend score (10%): total number of records (target >= 50).
+
+    Args:
+        db: Active SQLite database connection (flask.g.db).
+
+    Returns:
+        dict: Keys include overall (int 0–100), quality_label, quality_color,
+              quality_icon, coverage_pct, diversity_score, history_score,
+              saving_score, trend_score, total_items, total_stores,
+              total_records, covered_items, months_depth,
+              optimal_purchases, total_comparable,
+              improvements (list[dict]), store_stats (list[dict]).
+    """
     rows = db.execute('SELECT name, price, store, date, qty FROM expenses').fetchall()
     df   = rows_to_df(rows)
 
@@ -86,7 +106,13 @@ def get_advice_quality(db) -> dict:
         'improvements': improvements, 'store_stats': store_stats[:6],
     }
 
+
 def _empty():
+    """Return a zeroed-out quality result when there are no expense records.
+
+    Returns:
+        dict: Same structure as get_advice_quality with all scores set to zero.
+    """
     return {
         'overall': 0, 'quality_label': 'Немає даних',
         'quality_color': 'red', 'quality_icon': 'bi-x-circle',

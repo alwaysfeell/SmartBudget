@@ -1,11 +1,18 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from database import get_db
 from models.stats import get_stats
+
 bp = Blueprint('profile', __name__)
+
 
 @bp.route('/profile')
 def index():
-    """Render the user profile page."""
+    """Render the user profile page with current settings and statistics.
+
+    Returns:
+        flask.Response: Rendered profile.html template with user record
+            and current month budget statistics.
+    """
     db        = get_db()
     raw_stats = get_stats(db)
     return render_template('profile.html',
@@ -15,9 +22,17 @@ def index():
                                for k, v in raw_stats.items()
                            })
 
+
 @bp.route('/profile/update', methods=['POST'])
 def update():
-    """Handle profile update form submission."""
+    """Handle profile update form submission.
+
+    Validates that budget is a positive number, then updates the users
+    table for id=1. Flashes success or error message.
+
+    Returns:
+        flask.Response: Redirect to profile.index.
+    """
     first_name = request.form.get('first_name', '').strip()
     last_name  = request.form.get('last_name', '').strip()
     email      = request.form.get('email', '').strip()

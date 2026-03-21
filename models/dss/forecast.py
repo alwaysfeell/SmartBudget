@@ -7,7 +7,23 @@ _SEASONAL = {1: -0.02, 2: -0.05, 3: 0.00, 4: 0.03, 5: 0.05,
              11: 0.05, 12: 0.12}
 
 def get_forecast(db) -> dict:
-    """Forecast next-month spending based on linear regression over past months."""
+    """Forecast next-month spending based on linear regression over past months.
+
+    Algorithm:
+        1. Aggregate spending by month (last 6 months).
+        2. Apply OLS regression to non-zero months.
+        3. Adjust forecast with seasonal coefficients (_SEASONAL).
+        4. Compute 1-sigma confidence interval from residuals.
+        5. Evaluate budget risk: low / medium / high.
+
+    Args:
+        db: Active SQLite database connection (flask.g.db).
+
+    Returns:
+        dict: Keys include history_labels, history_values, forecast_labels,
+              forecast_values, forecast_low, forecast_high, cat_forecast,
+              risk_level, risk_text, risk_pct, slope, trend_direction.
+    """
     rows = db.execute('SELECT price, qty, date, category FROM expenses').fetchall()
     df   = rows_to_df(rows)
     now  = datetime.now()

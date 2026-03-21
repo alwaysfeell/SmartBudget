@@ -10,7 +10,14 @@ bp = Blueprint('recommendations', __name__)
 
 @bp.route('/recommendations')
 def index():
-    """Render the recommendations page with personalised advice."""
+    """Render the recommendations page with personalised saving advice.
+
+    Fetches up to 5 advice items, savings trend chart data, and full
+    price comparison table.
+
+    Returns:
+        flask.Response: Rendered recommendations.html template.
+    """
     db        = get_db()
     raw_stats = get_stats(db)
     stats     = {k: float(v) if hasattr(v, 'item') else v for k, v in raw_stats.items()}

@@ -6,9 +6,17 @@ from datetime import datetime
 
 bp = Blueprint('main', __name__)
 
+
 @bp.route('/')
 def index():
-    """Render the main dashboard."""
+    """Render the main dashboard with budget stats and charts.
+
+    Fetches current month statistics, 5 most recent expenses,
+    weekly spending chart data, and category breakdown chart data.
+
+    Returns:
+        flask.Response: Rendered index.html template.
+    """
     db        = get_db()
     raw_stats = get_stats(db)
     stats     = {k: float(v) if hasattr(v, 'item') else v for k, v in raw_stats.items()}
@@ -20,9 +28,15 @@ def index():
                            now=datetime.now(),
                            today=datetime.now().strftime('%Y-%m-%d'))
 
+
 @bp.route('/api/charts')
 def api_charts():
-    """Return chart data as JSON for AJAX updates."""
+    """Return chart data as JSON for AJAX dashboard updates.
+
+    Returns:
+        flask.Response: JSON with keys 'weekly' and 'categories',
+            each containing data formatted for Chart.js.
+    """
     db = get_db()
     return jsonify({
         'weekly':     get_weekly_chart_data(db),

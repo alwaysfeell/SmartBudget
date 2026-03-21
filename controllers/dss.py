@@ -11,7 +11,15 @@ bp = Blueprint('dss', __name__)
 
 @bp.route('/dss')
 def index():
-    """Render the DSS (Decision Support System) dashboard."""
+    """Render the DSS (Decision Support System) dashboard.
+
+    Aggregates data from all DSS modules: budget statistics, spending
+    forecast, scenario analysis, 50/30/20 rule breakdown, and data
+    quality score.
+
+    Returns:
+        flask.Response: Rendered dss.html template with all DSS data.
+    """
     db        = get_db()
     raw_stats = get_stats(db)
     stats     = {k: float(v) if hasattr(v, 'item') else v for k, v in raw_stats.items()}

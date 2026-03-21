@@ -2,7 +2,24 @@ from models.utils import rows_to_df
 
 
 def get_price_comparison(db) -> list:
-    """Return a list of products with min/max prices across different stores."""
+    """Return a list of products with min/max prices across different stores.
+
+    Queries all expense records that have a store value and groups them
+    by product name to build a price comparison table.
+
+    Args:
+        db: Active SQLite database connection (flask.g.db).
+
+    Returns:
+        list[dict]: Sorted by potential savings descending. Each dict has keys:
+            name (str): Product name.
+            category (str): Product category.
+            store_prices (dict): Mapping of store name to minimum price.
+            min_price (float): Lowest recorded price across all stores.
+            max_price (float): Highest recorded price across all stores.
+            best_store (str): Store name where the minimum price was found.
+            savings (float): Difference between max and min price (overpayment risk).
+    """
     rows = db.execute(
         'SELECT name, category, price, store FROM expenses WHERE store != "" ORDER BY name'
     ).fetchall()
