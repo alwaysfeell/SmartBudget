@@ -75,55 +75,190 @@ smartbudget/
 
 ---
 
-## Встановлення та запуск
-
-### 1\. Розпакувати проект
-
+## Developer Quick Start
+ 
+> Покрокова інструкція для розробника зі свіжою ОС — від нуля до запущеного проєкту.
+ 
+### 1. Необхідні залежності та програмне забезпечення
+ 
+Перед початком встановіть наступні програми:
+ 
+| Програма | Мінімальна версія | Де завантажити |
+|-|-|-|
+| Python | 3.10+ | https://python.org/downloads |
+| Git | будь-яка | https://git-scm.com/downloads |
+ 
+**Встановлення Python (Windows):**
+1. Перейдіть на https://python.org/downloads і завантажте останній Python 3.x
+2. Запустіть інсталятор — **обов'язково поставте галочку «Add Python to PATH»**
+3. Перевірте встановлення у командному рядку:
+```
+python --version
+```
+ 
+**Встановлення Python (macOS/Linux):**
 ```bash
-cd smartbudget
+# macOS (через Homebrew)
+brew install python@3.10
+ 
+# Ubuntu / Debian
+sudo apt update && sudo apt install python3.10 python3.10-venv python3-pip git -y
+```
+ 
+Перевірте встановлення:
+```bash
+python3 --version
+git --version
 ```
 
-### 2\. Створити віртуальне середовище
-
+---
+ 
+### 2. Клонування репозиторію
+ 
 ```bash
-python -m venv venv
-# Windows:
-venv\\Scripts\\activate
-# macOS/Linux:
+git clone https://github.com/alwaysfeell/SmartBudget.git
+cd SmartBudget
+```
+ 
+Після цього ви знаходитесь у кореневій папці проєкту.
+
+---
+ 
+### 3. Налаштування середовища розробки
+ 
+Створіть ізольоване віртуальне середовище Python, щоб залежності проєкту не конфліктували з системними пакетами:
+ 
+**macOS / Linux:**
+```bash
+python3 -m venv venv
 source venv/bin/activate
 ```
+ 
+**Windows (cmd):**
+```
+python -m venv venv
+venv\Scripts\activate
+```
+ 
+**Windows (PowerShell):**
+```
+python -m venv venv
+venv\Scripts\Activate.ps1
+```
+ 
+Після активації у терміналі з'явиться префікс `(venv)` — це означає, що середовище активоване і всі наступні команди `pip` встановлюватимуть пакети лише у нього.
+ 
+> **Важливо:** активуйте `venv` кожного разу при поверненні до роботи над проєктом.
 
-### 3\. Встановити залежності
-
+---
+ 
+### 4. Встановлення та конфігурація залежностей
+ 
+Встановіть усі необхідні Python-пакети:
+ 
 ```bash
 pip install -r requirements.txt
 ```
-
-### 4\. Налаштування змінних середовища (опціонально)
-
-Створіть файл `.env` у корені проєкту:
-
+ 
+Для розробки (лінтери, перевірка типів, документація) — додатково:
+ 
+```bash
+pip install -r requirements-dev.txt
+```
+ 
+Або одразу все через Makefile:
+ 
+```bash
+make install
+```
+ 
+Перевірте, що Flask встановлено коректно:
+ 
+```bash
+python -c "import flask; print(flask.__version__)"
+```
+ 
+**Налаштування змінних середовища (опціонально):**
+ 
+За замовчуванням проєкт запускається з налаштуваннями з `config.py`. Якщо потрібно змінити поведінку — створіть файл `.env` у корені проєкту:
+ 
 ```env
-SECRET\_KEY=your-secret-key-here
+SECRET_KEY=your-secret-key-here
 DATABASE=smartbudget.db
-DEBUG=false
+DEBUG=true
+```
+ 
+> Файл `.env` вже додано до `.gitignore` — він не потрапить у репозиторій.
+
+---
+ 
+### 5. Створення та налаштування бази даних
+ 
+SmartBudget використовує SQLite — **окремої установки сервера БД не потрібно**. База даних створюється автоматично при першому запуску застосунку.
+ 
+Файл бази: `smartbudget.db` у корені проєкту (не зберігається у репозиторії, є в `.gitignore`).
+ 
+При запуску автоматично виконується:
+- Створення таблиць `expenses`, `users`, `goals`
+- Заповнення тестовими (seed) даними для демонстрації
+ 
+Якщо потрібно скинути базу вручну:
+```bash
+rm smartbudget.db
+python app.py   # база створиться знову
 ```
 
-> Файл `.env` не додається до репозиторію (є в `.gitignore`)
-
-### 5\. Запустити застосунок
-
+---
+### 6. Запуск проєкту у режимі розробки
+ 
+```bash
+make run
+```
+ 
+Або без Makefile:
+ 
 ```bash
 python app.py
 ```
-
-### 6\. Відкрити у браузері
-
+ 
+Відкрийте браузер і перейдіть за адресою:
+ 
 ```
-http://localhost:5000
+http://127.0.0.1:5000
 ```
+ 
+Ви побачите дашборд SmartBudget із демо-даними. Flask автоматично перезапускається при зміні файлів (режим `DEBUG=true`).
 
-БД та демо-дані створюються автоматично при першому запуску (`smartbudget.db` не зберігається в репозиторії).
+---
+
+### 7. Базові команди та операції
+ 
+| Команда | Призначення |
+|-|-|
+| `make run` | Запустити Flask у dev-режимі |
+| `make lint` | Статичний аналіз коду (lint.py) |
+| `make typecheck` | Перевірка типів (mypy) |
+| `make check` | Lint + typecheck разом |
+| `make docs` | Згенерувати HTML-документацію (Sphinx) |
+| `make doccheck` | Перевірити якість docstrings (pydocstyle) |
+| `make clean` | Видалити `__pycache__` |
+| `make install` | Встановити всі залежності (prod + dev) |
+ 
+**Запуск лінтера вручну:**
+```bash
+python lint.py .
+```
+ 
+**Перевірка типів вручну:**
+```bash
+mypy app.py models/ controllers/
+```
+ 
+**Генерація документації вручну:**
+```bash
+sphinx-build -b html docs_sphinx docs_html
+# Відкрийте docs_html/index.html у браузері
+```
 
 ---
 
