@@ -1,0 +1,49 @@
+SmartBudget — Звіт профілювання
+======================================================================
+
+BENCHMARK (середній час, 5 запусків, 500 рядків у БД)
+Функція                        min,ms   mean,ms   max,ms
+----------------------------------------------------------
+get_stats                        4.61      9.66    29.59
+generate_advice×6               64.77     66.40    70.96
+get_weekly_chart_data           13.11     13.39    13.99
+get_price_comparison            10.23     10.56    10.90
+get_forecast                     4.77      5.37     7.54
+get_budget_rule_503020           2.81      2.99     3.62
+
+CPU PROFILE (top-20):
+         302609 function calls (299272 primitive calls) in 0.200 seconds
+
+   Ordered by: cumulative time
+   List reduced from 977 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.003    0.003    0.131    0.131 C:\Users\PC\PycharmProjects\SmartBudget-\models\advice.py:7(generate_advice)
+      871    0.003    0.000    0.045    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\frame.py:4337(__getitem__)
+      308    0.000    0.000    0.039    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\groupby\ops.py:615(get_iterator)
+      308    0.001    0.000    0.033    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\groupby\ops.py:1247(__iter__)
+      920    0.001    0.000    0.031    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\frame.py:4292(_ixs)
+      884    0.001    0.000    0.027    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\frame.py:4966(_get_item)
+      289    0.003    0.000    0.026    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\groupby\ops.py:1276(_chop)
+        1    0.000    0.000    0.026    0.026 C:\Users\PC\PycharmProjects\SmartBudget-\models\charts.py:6(get_weekly_chart_data)
+  276/224    0.000    0.000    0.025    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\ops\common.py:67(new_method)
+  462/460    0.000    0.000    0.023    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\util\_decorators.py:328(wrapper)
+       70    0.000    0.000    0.020    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\internals\managers.py:1044(take)
+        1    0.000    0.000    0.019    0.019 C:\Users\PC\PycharmProjects\SmartBudget-\models\prices.py:4(get_price_comparison)
+      393    0.004    0.000    0.018    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\arrays\datetimelike.py:385(__getitem__)
+       71    0.001    0.000    0.017    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\internals\managers.py:792(reindex_indexer)
+       53    0.000    0.000    0.016    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\generic.py:4010(take)
+      149    0.000    0.000    0.015    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\series.py:6749(_arith_method)
+      434    0.001    0.000    0.015    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\internals\blocks.py:995(take_nd)
+      149    0.001    0.000    0.014    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\base.py:1633(_arith_method)
+      224    0.001    0.000    0.014    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\series.py:6813(_construct_result)
+      128    0.000    0.000    0.014    0.000 C:\Users\PC\PycharmProjects\SmartBudget-\.venv\Lib\site-packages\pandas\core\indexing.py:1192(__getitem__)
+
+
+
+MEMORY PROFILE (tracemalloc):
+Функція                        поточна KB    пік KB
+----------------------------------------------------
+get_stats                            17.1     333.7
+generate_advice×6                    18.9     464.0
+get_forecast                         15.3     235.5
