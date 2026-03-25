@@ -16,7 +16,6 @@ import pandas as pd
 from models.utils import rows_to_df
 from models.stats import get_stats
 
-
 def generate_advice(db, count: int = 1):
     """Analyse purchase history and return personalised saving recommendations.
 
@@ -51,13 +50,11 @@ def generate_advice(db, count: int = 1):
     df['date'] = pd.to_datetime(df['date'])
     advices = []
 
-    # ── OPT 1: min_prices через SQL замість pandas groupby ─────────────────
     min_rows = db.execute(
         'SELECT name, MIN(price) as min_price FROM expenses WHERE store != "" GROUP BY name'
     ).fetchall()
     min_prices = {r['name']: r['min_price'] for r in min_rows}
 
-    # ── Алгоритм 1: переплата по товару ────────────────────────────────────
     overpay_details = []
     for name, grp in df.groupby('name'):
         if grp['store'].nunique() < 2:
@@ -88,7 +85,6 @@ def generate_advice(db, count: int = 1):
             'tag':    'economy',
         })
 
-    # ── OPT 2: store_overpay за один прохід ────────────────────────────────
     store_paid = {}
     store_min  = {}
     for (store, name), sgrp in df.groupby(['store', 'name']):
@@ -119,7 +115,6 @@ def generate_advice(db, count: int = 1):
             'tag':    'warning',
         })
 
-    # ── Алгоритм 3: топ-категорія поточного місяця ─────────────────────────
     month_start = datetime.now().replace(day=1).strftime('%Y-%m-%d')
     month_df    = df[df['date'] >= month_start]
     if not month_df.empty:
@@ -143,7 +138,6 @@ def generate_advice(db, count: int = 1):
             'tag':    'warning',
         })
 
-    # ── Алгоритм 4: тренд цін ──────────────────────────────────────────────
     trend_items = []
     for name, grp in df.groupby('name'):
         if len(grp) < 3:
@@ -172,7 +166,6 @@ def generate_advice(db, count: int = 1):
             'tag':    'warning',
         })
 
-    # ── Алгоритм 5: рейтинг магазинів ──────────────────────────────────────
     store_efficiency = {}
     for store, grp in df.groupby('store'):
         ratios = [
@@ -198,7 +191,6 @@ def generate_advice(db, count: int = 1):
             'tag':    'economy',
         })
 
-    # ── Алгоритм 6: оптимізація топ-категорії ──────────────────────────────
     freq_cats = df.groupby('category').size().sort_values(ascending=False)
     if len(freq_cats) >= 2:
         top_cat = freq_cats.index[0]

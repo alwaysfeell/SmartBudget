@@ -7,7 +7,6 @@ models/weekly_chart_opt.py — оптимізована версія get_weekly_
 
 from models.utils import get_budget
 
-
 def get_weekly_chart_data(db) -> dict:
     """Return weekly spending aggregated via SQL instead of pandas.
 

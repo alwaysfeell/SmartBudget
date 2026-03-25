@@ -20,7 +20,6 @@ sys.path.insert(0, BASE_DIR)
 OUTPUT_DIR = os.path.join(BASE_DIR, 'docs', 'performance')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-
 def make_test_db(n_rows: int = 500) -> sqlite3.Connection:
     """Створює in-memory SQLite з тестовими даними."""
     con = sqlite3.connect(':memory:')
@@ -71,9 +70,7 @@ def make_test_db(n_rows: int = 500) -> sqlite3.Connection:
     con.commit()
     return con
 
-
 RUNS = 10
-
 
 def bench(fn, db):
     """Виконує fn(db) RUNS разів, повертає (mean_ms, peak_kb)."""
@@ -89,7 +86,6 @@ def bench(fn, db):
         times.append(elapsed)
         peak_kb = max(peak_kb, pk / 1024)
     return round(sum(times) / len(times), 2), round(peak_kb, 1)
-
 
 def main():
     db = make_test_db(500)
@@ -107,7 +103,7 @@ def main():
     cases = [
         ('generate_advice×6',    orig_advice,            opt_advice),
         ('get_weekly_chart_data', chart_orig,             chart_opt),
-        ('get_stats',            get_stats,               get_stats),   # baseline
+        ('get_stats',            get_stats,               get_stats),
         ('get_forecast',         get_forecast,            get_forecast),
     ]
 
@@ -135,7 +131,6 @@ def main():
 
     print("=" * 75)
 
-    # зберегти результати
     out_path = os.path.join(OUTPUT_DIR, 'benchmark_results.txt')
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines) + '\n')

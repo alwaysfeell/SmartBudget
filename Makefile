@@ -31,3 +31,12 @@ logs:
 
 logsclean:
 	rm -rf logs/
+
+profile:
+	python profiler.py
+
+benchmark:
+	python benchmark_compare.py
+
+perfclean:
+	rm -f docs/performance/*.prof docs/performance/*.txt
