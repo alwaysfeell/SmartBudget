@@ -25,3 +25,9 @@ docsclean:
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; true
+
+logs:
+	@tail -50 logs/smartbudget.log 2>/dev/null || echo 'No log file yet.'
+
+logsclean:
+	rm -rf logs/
